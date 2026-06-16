@@ -279,4 +279,7 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   `apps/desk/lib/buyers-import.ts` (`inferBuyersFromCashSales`) + `/api/buyers/import` + `@parcel/db insertBuyers`,
   building the dispo moat from public deed records.
 - **Added Vitest to the desk** (its pure logic had zero tests): dispo, matchScore, buyers-import — 8 tests.
-- Verified: 8/8 typecheck, **97 tests** (89 services + 8 desk), desk builds.
+- **Added CI** (`.github/workflows/ci.yml`): pnpm + Node 22 → typecheck + test (97) + desk build on every push.
+- Verified: 8/8 typecheck, **97 tests** (89 services + 8 desk), desk builds. All committed + pushed.
+- Still external/paid (cannot be automated): provision Supabase, real provider keys, and the **MT attorney
+  review** (see `docs/GO-LIVE.md` + `docs/MONTANA-LEGAL.md`). GitHub issue comments pending (MCP needs re-auth).
