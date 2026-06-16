@@ -18,6 +18,11 @@ interfaces + provision Supabase.
   skiptrace 12, outreach 22, intake 14); the Next.js desk builds.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
+- **Domain knowledge:** `docs/RESEARCH-wholesaling.md` is the pro playbook (deep research). Build-affecting
+  highlights: plan assignment fee **~$10k** (reconsider `fee_target` $12k→$10k); funnel **~66 leads →
+  ~10–15 offers → 1 deal**, cost/deal **$4–9k**; stay **email-first** (CAN-SPAM stable; TCPA/SMS/calls =
+  litigation minefield); no Zillow/Redfin scraping; dispo = top 3–5 matched buyers, 24-hr window, then blast;
+  buyer list from county cash-closings; Montana law still needs an attorney check.
 
 ---
 
@@ -225,3 +230,17 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 - A `.claude/settings.json` SessionStart hook (install deps on session start) was proposed but NOT
   added — the safety classifier flagged it as unrequested persistence. Add it explicitly if wanted.
 - Reference repos remain at `/home/user/refs/{ECC,firecrawl}` (untrusted reference, not authority).
+
+### Session 2 — 2026-06-16 (deep research: wholesaling domain knowledge)
+- Ran `/deep-research` (8 agents, ~40 sources) on U.S. wholesaling → saved the full cited pro playbook to
+  `docs/RESEARCH-wholesaling.md` (its §0 is "what we'll actually USE — build implications").
+- Key build-affecting findings (see that doc): assignment fee **~$10k** is the prudent planning number, not the
+  vendor "$13–20k" → consider `underwrites.fee_target` $12k→$10k. Funnel **~66 leads → ~10–15 offers → 1
+  assignment**; cost/deal **$4–9k**; one stacked-list pull/month ≈ ~1 deal. **CAN-SPAM is stable and maps to
+  our email-first design; TCPA (SMS/calls/RVM) is a litigation minefield** — stay email-first. Licensed data
+  only (no Zillow/Redfin scraping — already enforced). Dispo tactic: top 3–5 matched buyers, 24-hr exclusive,
+  then blast; seed the buyer list from county cash-closings (no mortgage lien, last ~6 mo); segment by repair
+  tolerance. Wholesaling law is tightening 2024–2026 and varies hard by state; **Montana still needs a direct
+  statute + RE-attorney check** (existing hard gate).
+- No code changed this session (research + docs only). Open follow-ups: (a) flip `fee_target` to $10k + add
+  funnel KPI targets to the desk dashboard; (b) Montana-specific legal deep-dive; (c) optional SessionStart hook.
