@@ -258,6 +258,22 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   county-records ingesters) + SendGrid (free tier) + domain + **attorney-reviewed contract / MT legal check**
   (the one true hard gate). A `docs/GO-LIVE.md` checklist (free vs paid, ordered) is the next doc to write.
 
+### Session 6 — 2026-06-16 (CI fix + buyer/deal engine Phase A)
+- **CI fix:** the workflow failed in ~4s — `pnpm/action-setup@v4` had `version: 10` AND package.json
+  sets `packageManager: pnpm@10.9.0` → "Multiple versions of pnpm specified". Removed `version:` →
+  CI run `77a440a` is now **green**.
+- **Buyer + deal engine — Phase A** (the in-app fee path; user chose "A first, then B"):
+  - Keystone: `buyers.email/phone`, `deals.assigned_buyer_id`, `contracts.buyer_id` (FKs added after
+    `buyers`; new fields **optional-on-insert** so intake's contract/deal inserts are unaffected).
+  - `lib/match.ts computeMatchRows()` (pure, 0–100 int, ranked) + `lib/data.ts upsertMatchesForDeal()`
+    (persist the match snapshot — `matches` was read-only) + `assignDealToBuyer()` (set assigned buyer,
+    stage→Under contract, create a **queued** contract for that buyer, offer = `your_mao`).
+  - UI: per-qualifying-buyer **Assign** action on the deal page + "Assigned to X" banner; BuyerForm/Row
+    get email/phone; the Contracts queue shows the linked buyer.
+  - Verified: 8/8 typecheck, **99 tests** (desk +computeMatchRows), desk builds.
+- **Next: Phase B** — disposition dispatch (send-to-tier + `matches.sent_at`) + wire the existing
+  `/api/buyers/import` (cash-closings) to a Buyers-page button.
+
 ### Session 5 — 2026-06-16 (security review + fixes)
 - Ran `/security-review`. Passing: no hardcoded secrets, providers throw on missing keys, service-role
   server-only, RLS on all tables, no PII in logs, provider responses zod-validated, parameterized queries.
