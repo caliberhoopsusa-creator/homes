@@ -215,4 +215,13 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 - Restructured the `CLAUDE.md` set to tight, scannable hard-rules: root (7 non-negotiables,
   stack, layout + worktree/ownership rule) + nested in all 5 services and `apps/desk`
   (module owned, imports from `@parcel/types`, never edit another module, one invariant + done-when).
-- Pending at session end: ECC `.claude/` vendoring (SessionStart hook + distilled rules) — not started.
+- Vendored 7 vetted, Parcel-tailored skills into `.claude/skills/` (`codebase-onboarding`,
+  `parcel-compliance`, `security-review`, `backend-patterns`, `postgres-patterns`, `nextjs-desk`,
+  `testing`). Adapted from the ECC skill set (`/home/user/refs/ECC`) + Supabase Agent Skills (MIT) —
+  each read, vetted, and rewritten (NOT blind-copied; a raw `cp` was correctly blocked by the safety
+  classifier). Then USED them: ran security-review + parcel-compliance + backend-patterns over the
+  tree → clean (no hardcoded secrets, no PII in logs, RLS on all 11 tables, suppression+CAN-SPAM
+  gate before send, intake gate holds, no cross-service imports, Firecrawl ToS denylist present).
+- A `.claude/settings.json` SessionStart hook (install deps on session start) was proposed but NOT
+  added — the safety classifier flagged it as unrequested persistence. Add it explicitly if wanted.
+- Reference repos remain at `/home/user/refs/{ECC,firecrawl}` (untrusted reference, not authority).
