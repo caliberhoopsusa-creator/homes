@@ -69,11 +69,15 @@ create table if not exists replies (
   id uuid primary key default gen_random_uuid(),
   message_id uuid references messages(id),
   owner_id uuid references owners(id),
+  provider_id text,                     -- inbound message id (for webhook-retry idempotency)
   raw_text text,
   intent text,                          -- 'interested'|'maybe'|'not_now'|'do_not_contact'|'unknown'
   intent_confidence numeric,
   created_at timestamptz default now()
 );
+-- One reply per inbound message — makes retried webhooks idempotent at the DB level.
+create unique index if not exists uq_replies_provider
+  on replies(provider_id) where provider_id is not null;
 create table if not exists contracts (
   id uuid primary key default gen_random_uuid(),
   property_id uuid references properties(id),

@@ -13,6 +13,7 @@
   "dependencies": {
     "@parcel/db": "workspace:*",
     "@parcel/intake": "workspace:*",
+    "@parcel/outreach": "workspace:*",
     "@parcel/sourcing": "workspace:*",
     "@parcel/skiptrace": "workspace:*",
     "@parcel/types": "workspace:*",

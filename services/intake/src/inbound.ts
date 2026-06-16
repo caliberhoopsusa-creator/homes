@@ -13,6 +13,8 @@ export interface InboundEmail {
   text: string;
   /** The provider message id this is a reply to (from In-Reply-To), if present. */
   inReplyTo: string | null;
+  /** This inbound message's own Message-ID — used for webhook-retry idempotency. */
+  messageId: string | null;
 }
 
 /** Extract the first bare email address from a header value like `Name <a@b.com>`. */
@@ -24,13 +26,22 @@ export function extractEmail(value: string | undefined | null): string {
   return (m?.[0] ?? "").trim().toLowerCase();
 }
 
-/** Pull `In-Reply-To` (a Message-ID) out of the raw headers blob. */
-export function parseInReplyTo(headers: string | undefined | null): string | null {
+/** Pull a header value (e.g. `In-Reply-To`, `Message-ID`) out of the raw headers blob. */
+export function parseHeader(
+  headers: string | undefined | null,
+  name: string,
+): string | null {
   if (!headers) return null;
-  const m = headers.match(/^In-Reply-To:\s*(.+)$/im);
+  const re = new RegExp(`^${name}:\\s*(.+)$`, "im");
+  const m = headers.match(re);
   if (!m || !m[1]) return null;
   const id = m[1].trim().replace(/^<|>$/g, "");
   return id || null;
+}
+
+/** Pull `In-Reply-To` (a Message-ID) out of the raw headers blob. */
+export function parseInReplyTo(headers: string | undefined | null): string | null {
+  return parseHeader(headers, "In-Reply-To");
 }
 
 /** SendGrid Inbound Parse fields → InboundEmail. */
@@ -43,5 +54,6 @@ export function parseInboundParse(
     subject: (fields.subject ?? "").trim(),
     text: (fields.text ?? fields.html ?? "").trim(),
     inReplyTo: parseInReplyTo(fields.headers),
+    messageId: parseHeader(fields.headers, "Message-ID"),
   };
 }

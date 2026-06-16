@@ -115,6 +115,8 @@ export interface Reply {
   id: string;
   message_id: string | null;
   owner_id: string | null;
+  /** Inbound provider message id — for webhook-retry idempotency. */
+  provider_id: string | null;
   raw_text: string | null;
   intent: ReplyIntent | null;
   intent_confidence: number | null;

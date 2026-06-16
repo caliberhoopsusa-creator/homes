@@ -7,18 +7,14 @@
 // required by Google/Yahoo 2024 bulk-sender rules — see docs/DELIVERABILITY.md).
 import type { NextRequest } from "next/server";
 import { createServiceClient, suppressOwnerById } from "@parcel/db";
+import { verifyUnsubscribeToken } from "@parcel/outreach";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function ownerIdFromToken(token: string | null): string | null {
-  if (!token) return null;
-  try {
-    const decoded = Buffer.from(token, "base64url").toString("utf8");
-    return decoded.startsWith("unsub:") ? decoded.slice("unsub:".length) : null;
-  } catch {
-    return null;
-  }
+  // HMAC-verified — a forged/tampered token returns null (no suppression).
+  return token ? verifyUnsubscribeToken(token) : null;
 }
 
 function page(message: string, status = 200): Response {

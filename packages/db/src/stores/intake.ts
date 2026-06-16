@@ -73,6 +73,17 @@ export class IntakeDbStore implements IntakeStore {
     };
   }
 
+  async alreadyHandled(providerMessageId: string): Promise<boolean> {
+    const rows = unwrap(
+      await this.db
+        .from("replies")
+        .select("id")
+        .eq("provider_id", providerMessageId)
+        .limit(1),
+    ) as Array<{ id: string }>;
+    return rows.length > 0;
+  }
+
   async insertReply(row: ReplyInsert): Promise<{ id: string }> {
     const data = unwrap(
       await this.db.from("replies").insert(row).select("id"),

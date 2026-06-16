@@ -258,6 +258,22 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   county-records ingesters) + SendGrid (free tier) + domain + **attorney-reviewed contract / MT legal check**
   (the one true hard gate). A `docs/GO-LIVE.md` checklist (free vs paid, ordered) is the next doc to write.
 
+### Session 5 — 2026-06-16 (security review + fixes)
+- Ran `/security-review`. Passing: no hardcoded secrets, providers throw on missing keys, service-role
+  server-only, RLS on all tables, no PII in logs, provider responses zod-validated, parameterized queries.
+- **Fixed 3 findings (with tests):**
+  1. **HMAC-signed unsubscribe token** — was `base64url("unsub:"+ownerId)` (forgeable → anyone could suppress
+     an owner). Now `base64url(ownerId).HMAC` via `node:crypto` (`UNSUBSCRIBE_SECRET`); desk route uses
+     `verifyUnsubscribeToken` from `@parcel/outreach`. (Added `@types/node` to outreach; `@parcel/outreach` to desk.)
+  2. **Inbound webhook auth** — `/api/inbound` now requires `?key=<INBOUND_WEBHOOK_SECRET>` when set (spoofed
+     replies can't forge contracts/deals); open in dev/mock.
+  3. **Inbound idempotency** — keystone: `replies.provider_id` + partial-unique index; `parseInboundParse` reads
+     the inbound `Message-ID`; `handleInboundReply` returns early (`duplicate:true`) if already handled, so a
+     webhook retry makes no second contract/deal. `IntakeStore.alreadyHandled` impl in `@parcel/db`.
+- Deferred (noted, before go-live): operator-route auth on `/api/pull` + `/api/buyers/import`; zod on a couple
+  of route bodies; county-provider SSRF is operator-config (low). 
+- Verified: 8/8 typecheck, **98 tests**, desk builds.
+
 ### Session 4 — 2026-06-16 (go-live: free build + payment-block research)
 - Orchestrated a lead deep-research agent + per-block sub-agents on the "payment blocks" (cheapest stack,
   deliverability, Montana legal). Persisted findings to **`docs/GO-LIVE.md`** (ordered free-vs-paid runbook),

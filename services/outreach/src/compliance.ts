@@ -2,17 +2,45 @@
 // Every outbound body MUST carry: a physical mailing address and a working
 // one-click unsubscribe link bound to a per-owner token. These functions are
 // pure so the test suite can assert the footer is present on every send.
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { OutreachConfig } from "./config.js";
-import { base64url } from "./env.js";
+import { ambientEnv } from "./env.js";
 
-/**
- * Deterministic, opaque per-owner unsubscribe token. Real implementations would
- * use a signed/HMAC token; here we keep it dependency-free but per-owner unique
- * and URL-safe so the link is stable and honors opt-out for that specific owner.
- */
+// HMAC-signed, per-owner unsubscribe token: `base64url(ownerId).base64url(HMAC)`.
+// The signature makes the token UNFORGEABLE — without it, the token was just
+// base64url(ownerId), so anyone could suppress an arbitrary owner by guessing an
+// id. The secret comes from env (UNSUBSCRIBE_SECRET); set a strong value in
+// production. The dev fallback is intentionally not secret.
+function unsubSecret(): string {
+  return ambientEnv().UNSUBSCRIBE_SECRET ?? "dev-unsubscribe-secret-change-me";
+}
+
+function signOwner(ownerId: string): string {
+  return createHmac("sha256", unsubSecret()).update(ownerId).digest("base64url");
+}
+
+/** Signed, URL-safe per-owner unsubscribe token. */
 export function unsubscribeToken(ownerId: string): string {
-  // base64url of the owner id keeps it opaque-ish and URL-safe without crypto deps.
-  return base64url(`unsub:${ownerId}`);
+  const id = Buffer.from(ownerId, "utf8").toString("base64url");
+  return `${id}.${signOwner(ownerId)}`;
+}
+
+/** Verify a token; return the ownerId it was issued for, or null if forged/invalid. */
+export function verifyUnsubscribeToken(token: string): string | null {
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return null;
+  let ownerId: string;
+  try {
+    ownerId = Buffer.from(token.slice(0, dot), "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const provided = Buffer.from(token.slice(dot + 1));
+  const expected = Buffer.from(signOwner(ownerId));
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+    return null;
+  }
+  return ownerId;
 }
 
 /** Full one-click unsubscribe URL for an owner. */

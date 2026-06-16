@@ -32,6 +32,9 @@ class FakeStore implements IntakeStore {
     this.replies.push(row);
     return { id: `reply-${++this.seq}` };
   }
+  async alreadyHandled(providerMessageId: string) {
+    return this.replies.some((r) => r.provider_id === providerMessageId);
+  }
   async markMessageReplied(id: string) {
     this.repliedMessages.push(id);
   }
@@ -61,13 +64,17 @@ function deps(store: IntakeStore, storage = new MockStorage()) {
   return { store, classifier: new MockClassifier(), storage };
 }
 
-function email(text: string, from = "owner@host.com"): InboundEmail {
+function email(
+  text: string,
+  from = "owner@host.com",
+  messageId = "inbound-1@sg",
+): InboundEmail {
   return parseInboundParse({
     from,
     to: "replies@offers.brand.com",
     subject: "Re: cash offer",
     text,
-    headers: "In-Reply-To: <msg-1@sg>",
+    headers: `In-Reply-To: <msg-1@sg>\r\nMessage-ID: <${messageId}>`,
   });
 }
 
@@ -143,5 +150,23 @@ describe("handleInboundReply — the gated loop", () => {
     expect(store.contracts).toHaveLength(0);
     expect(store.deals).toHaveLength(1); // lead still surfaced
     expect(r.note).toMatch(/missing underwrite/);
+  });
+
+  it("is idempotent — a re-delivered webhook (same Message-ID) makes no second contract/deal", async () => {
+    const store = new FakeStore(warmCtx);
+    const msg = email("Yes, I'd take an offer!");
+
+    const first = await handleInboundReply(msg, deps(store, storage));
+    expect(first.intent).toBe("interested");
+    expect(store.contracts).toHaveLength(1);
+    expect(store.deals).toHaveLength(1);
+    expect(store.replies).toHaveLength(1);
+
+    const retry = await handleInboundReply(msg, deps(store, storage));
+    expect(retry.duplicate).toBe(true);
+    // No new rows on the retry.
+    expect(store.contracts).toHaveLength(1);
+    expect(store.deals).toHaveLength(1);
+    expect(store.replies).toHaveLength(1);
   });
 });

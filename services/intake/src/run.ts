@@ -35,6 +35,8 @@ export interface IntakeStore {
     inReplyTo: string | null;
   }): Promise<OwnerContext>;
   insertReply(row: ReplyInsert): Promise<{ id: string }>;
+  /** True if an inbound with this provider message id was already processed (idempotency). */
+  alreadyHandled(providerMessageId: string): Promise<boolean>;
   /** Mark the outbound message that was replied to (best-effort). */
   markMessageReplied(messageId: string): Promise<void>;
   insertContract(row: ContractInsert): Promise<{ id: string }>;
@@ -58,6 +60,8 @@ export interface IntakeResult {
   contractId: string | null;
   dealId: string | null;
   suppressed: boolean;
+  /** True when this inbound was a duplicate (webhook retry) and was skipped. */
+  duplicate?: boolean;
   /** Why no contract was produced for an "interested" reply, if applicable. */
   note?: string;
 }
@@ -71,6 +75,21 @@ export async function handleInboundReply(
   deps: IntakeDeps,
 ): Promise<IntakeResult> {
   const { store, classifier, storage } = deps;
+
+  // Idempotency: a re-delivered webhook must not create a second contract/deal.
+  if (email.messageId && (await store.alreadyHandled(email.messageId))) {
+    return {
+      intent: "unknown",
+      confidence: 0,
+      replyId: "",
+      contractId: null,
+      dealId: null,
+      suppressed: false,
+      duplicate: true,
+      note: "duplicate inbound (already handled)",
+    };
+  }
+
   const ctx = await store.resolveContext({
     fromEmail: email.fromEmail,
     inReplyTo: email.inReplyTo,
@@ -81,6 +100,7 @@ export async function handleInboundReply(
   const reply = await store.insertReply({
     message_id: ctx.messageId,
     owner_id: ctx.ownerId,
+    provider_id: email.messageId,
     raw_text: email.text,
     intent,
     intent_confidence: confidence,

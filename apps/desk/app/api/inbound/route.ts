@@ -17,6 +17,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest): Promise<Response> {
+  // Webhook auth: if INBOUND_WEBHOOK_SECRET is set, require ?key=<secret> on the
+  // Inbound Parse URL so spoofed replies can't forge contracts/deals. When unset
+  // (dev/mock), allow through so the loop runs keyless.
+  const secret = process.env.INBOUND_WEBHOOK_SECRET;
+  if (secret) {
+    const provided = new URL(req.url).searchParams.get("key");
+    if (provided !== secret) {
+      return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+  }
+
   // Inbound Parse posts multipart/form-data.
   let fields: Record<string, string> = {};
   try {
