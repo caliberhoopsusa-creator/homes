@@ -7,7 +7,7 @@ create extension if not exists "pgcrypto";
 -- ── properties: the raw asset ────────────────────────────────────────────────
 create table if not exists properties (
   id uuid primary key default gen_random_uuid(),
-  source text not null,                 -- 'attom' | 'batchdata' | 'firecrawl' | 'manual'
+  source text not null,                 -- 'attom' | 'batchdata' | 'firecrawl' | 'county' | 'manual'
   source_id text,
   address text not null,
   city text, state text, zip text,

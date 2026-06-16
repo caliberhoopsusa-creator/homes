@@ -85,8 +85,14 @@ export async function runPull(
 }
 
 function passesFilters(c: PropertyCandidate, req: RadiusPullRequest): boolean {
-  if (!withinRadius(req.lat, req.lng, c.lat, c.lng, req.radiusMiles))
-    return false;
+  // Geocoded candidates must fall inside the radius. Candidates WITHOUT coords
+  // (county/Firecrawl public-record results) are already region-scoped at the
+  // source, so keep them — geocoding can refine later. (Without this they'd be
+  // silently dropped, since withinRadius() fails on null coords.)
+  if (c.lat !== null && c.lng !== null) {
+    if (!withinRadius(req.lat, req.lng, c.lat, c.lng, req.radiusMiles))
+      return false;
+  }
 
   const { minBeds, distress } = req.filters;
   if (minBeds !== undefined && (c.beds ?? 0) < minBeds) return false;

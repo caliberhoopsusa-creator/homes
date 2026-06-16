@@ -3,7 +3,12 @@
 // This is the keystone contract — every service imports row/insert shapes from here.
 
 // ── string-literal enums used across the schema ──────────────────────────────
-export type PropertySource = "attom" | "batchdata" | "firecrawl" | "manual";
+export type PropertySource =
+  | "attom"
+  | "batchdata"
+  | "firecrawl"
+  | "county"
+  | "manual";
 export type SkiptraceStatus = "pending" | "matched" | "none";
 export type Verdict = "clear" | "thin" | "pass";
 export type DistressSignal =

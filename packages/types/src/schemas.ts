@@ -29,7 +29,7 @@ export const dealStage = z.enum([
 
 // A candidate from a PropertyProvider, before it becomes a `properties` row.
 export const propertyCandidate = z.object({
-  source: z.enum(["attom", "batchdata", "firecrawl", "manual"]),
+  source: z.enum(["attom", "batchdata", "firecrawl", "county", "manual"]),
   source_id: z.string().nullable(),
   address: z.string().min(1),
   city: z.string().nullable(),
