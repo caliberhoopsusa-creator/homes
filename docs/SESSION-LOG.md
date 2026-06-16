@@ -14,7 +14,8 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **~92 tests pass**; the Next.js desk builds.
+- **8 workspace projects** typecheck clean; **80 tests pass** (underwriting 15, sourcing 17,
+  skiptrace 12, outreach 22, intake 14); the Next.js desk builds.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
 
@@ -207,9 +208,11 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   (`/api/pull`, `/api/inbound`). Made the radius-pull button real.
 - Added Firecrawl providers for sourcing + skip-trace (keystone `firecrawl` source) with ToS denylist.
 - Unzipped ECC + Firecrawl reference repos to `/home/user/refs/`.
-- Solved the integration gotchas in §6. Final state: 8/8 typecheck, ~92 tests, desk builds.
+- Solved the integration gotchas in §6. Final state: 8/8 typecheck, 80 tests, desk builds.
 - Commits: `9ea4cc2` (keystone) → `87b12e7` (underwriting) → `026e0de`/`4a1e426` (sourcing+skiptrace)
   → `f6c3d21` (outreach) → desk+fixes → `06a940c` (intake) → `752bfaf` (db+inbound) →
   `6ff65a5` (real pull) → `b45d070` (Firecrawl). Branch: `claude/serene-mayer-b5t93c`.
-- Pending at session end: restructuring the `CLAUDE.md` set to the tighter spec (root shown for
-  approval; nested to follow); ECC vendoring not yet started.
+- Restructured the `CLAUDE.md` set to tight, scannable hard-rules: root (7 non-negotiables,
+  stack, layout + worktree/ownership rule) + nested in all 5 services and `apps/desk`
+  (module owned, imports from `@parcel/types`, never edit another module, one invariant + done-when).
+- Pending at session end: ECC `.claude/` vendoring (SessionStart hook + distilled rules) — not started.

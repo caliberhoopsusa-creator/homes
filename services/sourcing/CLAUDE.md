@@ -1,10 +1,11 @@
-# services/sourcing — agent rules
+# services/sourcing (`@parcel/sourcing`) — agent rules
 
-You own `services/sourcing`. Import shared types/schemas from `@parcel/types` only;
-never redefine a shared shape and never edit another service.
+You own `services/sourcing`. Import shared types from `@parcel/types` only. Talk to other
+modules ONLY through the Postgres tables (PRD §5). **Never edit another module.**
 
-- Provider integrations live behind the `PropertyProvider` interface; default is the
-  deterministic `MockProvider`. Real keys (BatchData) come from env — no secrets in source.
-- DB access is injected via `SourcingStore`; never import a DB client here.
-- Done-when: a mock pull yields ≥500 deduped rows, re-runs insert no duplicates,
-  every row has ≥1 distress tag. Stay within PRD §6.1 — do not gold-plate.
+- Providers sit behind the `PropertyProvider` interface — `MockProvider` is the default;
+  BatchData/Firecrawl opt in via `PROPERTY_PROVIDER` + env keys (no secrets in source).
+  Firecrawl: PERMITTED public sources only; Zillow/Redfin/Trulia/Realtor are ToS-denied.
+- DB access is the injected `SourcingStore` — never import a DB client here.
+- **Done when (PRD §6.1):** a mock pull writes ≥500 deduped rows, re-runs add no duplicates,
+  every row has ≥1 distress tag. Don't gold-plate.

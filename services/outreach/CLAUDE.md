@@ -1,15 +1,13 @@
-# services/outreach — agent rules
+# services/outreach (`@parcel/outreach`) — agent rules
 
-You own `services/outreach`. Import shared types from `@parcel/types` only.
+You own `services/outreach`. Import shared types from `@parcel/types` only. Talk to other
+modules ONLY through the Postgres tables (PRD §5). **Never edit another module.**
 
-- CAN-SPAM is non-negotiable (CLAUDE.md #2): every send body MUST carry the
-  physical mailing address and a working per-owner one-click unsubscribe. The
-  footer is enforced in `compliance.ts` and asserted again in `runCampaign`.
-- The suppression list is a HARD gate: `do_not_contact`/`unsubscribe` owners are
-  NEVER messaged. Check `store.isSuppressed(email)` before any send.
-- MT broker line (#4): market AN OFFER TO BUY, never the property FOR SALE.
-- No DB client or live SDK in this module — all externals (DB, SendGrid,
-  Anthropic) sit behind injected interfaces; default impls are mocks. No secrets
-  in source; keys come from env only.
-- Done-when: PRD §6.4 — 3 touches, compliant sends, suppression honored, daily
-  cap respected, `messages` rows logged queued→sent. Do not exceed scope.
+- **CAN-SPAM is a HARD gate:** every body carries the physical mailing address + a working
+  per-owner one-click unsubscribe (`isCompliant` throws otherwise). Check `isSuppressed`
+  before any send — `do_not_contact`/`unsubscribe` owners are NEVER messaged.
+- Market *an offer to buy*, never *the property for sale* (MT broker line).
+- Externals (SendGrid, Anthropic, DB) sit behind injected interfaces — mock default, keys via
+  env, no secrets in source.
+- **Done when (PRD §6.4):** 3 touches, suppression honored, daily cap respected, `messages`
+  rows logged queued→sent. Don't gold-plate.

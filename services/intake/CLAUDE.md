@@ -1,16 +1,13 @@
-# services/intake — agent rules
+# services/intake (`@parcel/intake`) — agent rules
 
-You own `services/intake`. Import shared types from `@parcel/types` only.
+You own `services/intake`. Import shared types from `@parcel/types` only. Talk to other
+modules ONLY through the Postgres tables (PRD §5). **Never edit another module.**
 
-- NO COLD CONTRACTS (CLAUDE.md #1): a contract is generated ONLY on an
-  `interested` reply, and ONLY as `status='queued'`. This service NEVER sends —
-  a human approves in the desk. Do not add a send path here.
-- The assignment template MUST be attorney-reviewed before live use (#4): keep
-  the `ATTORNEY_REVIEW_NOTICE` stamped until `CONTRACT_TEMPLATE_REVIEWED=true`.
-- `do_not_contact`/opt-out replies write a permanent suppression and never create
-  a contract.
-- No DB client or live SDK in this module — DB via the injected `IntakeStore`;
-  Anthropic and Supabase Storage sit behind interfaces defaulting to mocks. No
-  secrets in source; keys via env.
-- Done-when: PRD §6.5 — a "yes" reply yields a queued contract PDF + a desk deal
-  in < 60s; a "remove me" reply suppresses the owner. Do not exceed scope.
+- **NO COLD CONTRACTS:** a contract is generated ONLY on an `interested` reply, ONLY as
+  `status='queued'`. This service NEVER sends — a human approves in the desk. No send path here.
+- Keep the attorney-review notice stamped on the PDF until `CONTRACT_TEMPLATE_REVIEWED=true`.
+- `do_not_contact`/opt-out → permanent suppression, never a contract.
+- Externals (Anthropic, Supabase Storage, DB) sit behind injected interfaces — mock default,
+  keys via env, no secrets in source.
+- **Done when (PRD §6.5):** a "yes" reply → queued contract PDF + a `Contacted` deal in < 60s;
+  a "remove me" reply → owner suppressed. Don't gold-plate.
