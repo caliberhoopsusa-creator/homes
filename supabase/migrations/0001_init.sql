@@ -111,6 +111,7 @@ create table if not exists buyers (
   name text, type text,
   min_price numeric, max_price numeric, min_beds int,
   areas text[], max_repairs numeric, notes text,
+  email text, phone text,               -- buyer contact (for disposition dispatch)
   created_at timestamptz default now()
 );
 create table if not exists matches (
