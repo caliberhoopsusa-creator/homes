@@ -3,7 +3,7 @@
 // MockProvider; SendGridProvider is the real shape (v3 mail send) and throws if the
 // key is missing. SendGridProvider does NOT need to work live.
 import type { EnvLike, FetchLike } from "./env.js";
-import { ambientEnv } from "./env.js";
+import { ambientEnv, ambientFetch } from "./env.js";
 
 export interface OutboundEmail {
   to: string;
@@ -73,7 +73,7 @@ export class SendGridProvider implements EmailProvider {
       (fromDomain ? `offers@${fromDomain}` : "");
     this.replyTo =
       opts.replyTo ?? env.SENDGRID_REPLY_TO ?? env.OUTREACH_REPLY_TO ?? "";
-    this.fetchImpl = opts.fetchImpl ?? fetch;
+    this.fetchImpl = opts.fetchImpl ?? ambientFetch();
   }
 
   async send(msg: OutboundEmail): Promise<SendResult> {

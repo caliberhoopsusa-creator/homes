@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@parcel/db": "workspace:*",
+    "@parcel/intake": "workspace:*",
     "@parcel/types": "workspace:*",
     "@parcel/underwriting": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",

@@ -5,10 +5,6 @@
 /** A read-only environment bag (a subset of process.env). */
 export type EnvLike = Record<string, string | undefined>;
 
-declare global {
-  function fetch(input: string, init?: unknown): Promise<FetchResponse>;
-}
-
 /** The slice of the Fetch Response we consume. */
 export interface FetchResponse {
   ok: boolean;

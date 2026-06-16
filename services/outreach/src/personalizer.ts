@@ -6,7 +6,7 @@
 // is the real shape (env-keyed, faithful Messages API mapping) and throws if the
 // key is missing. It does NOT need to run live.
 import type { EnvLike, FetchLike } from "./env.js";
-import { ambientEnv } from "./env.js";
+import { ambientEnv, ambientFetch } from "./env.js";
 
 export interface Personalizer {
   /**
@@ -61,7 +61,7 @@ export class AnthropicPersonalizer implements Personalizer {
     }
     this.apiKey = apiKey;
     this.model = opts.model ?? env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
-    this.fetchImpl = opts.fetchImpl ?? fetch;
+    this.fetchImpl = opts.fetchImpl ?? ambientFetch();
   }
 
   /** Synchronous token fill (matches the Personalizer contract). */

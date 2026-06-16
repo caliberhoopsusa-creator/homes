@@ -17,6 +17,12 @@ importers:
 
   apps/desk:
     dependencies:
+      '@parcel/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@parcel/intake':
+        specifier: workspace:*
+        version: link:../../services/intake
       '@parcel/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -57,6 +63,37 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/db:
+    dependencies:
+      '@parcel/intake':
+        specifier: workspace:*
+        version: link:../../services/intake
+      '@parcel/outreach':
+        specifier: workspace:*
+        version: link:../../services/outreach
+      '@parcel/skiptrace':
+        specifier: workspace:*
+        version: link:../../services/skiptrace
+      '@parcel/sourcing':
+        specifier: workspace:*
+        version: link:../../services/sourcing
+      '@parcel/types':
+        specifier: workspace:*
+        version: link:../types
+      '@parcel/underwriting':
+        specifier: workspace:*
+        version: link:../../services/underwriting
+      '@supabase/supabase-js':
+        specifier: ^2.45.4
+        version: 2.108.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.21
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

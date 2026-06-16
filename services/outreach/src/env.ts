@@ -6,15 +6,6 @@
 /** A read-only environment bag (a subset of process.env). */
 export type EnvLike = Record<string, string | undefined>;
 
-// Ambient declaration for the one Web global this service references directly.
-// Real runtimes (Node 18+, Bun, edge) provide `fetch`; declaring the minimal
-// shape locally avoids a hard dependency on @types/node. `process` is read via a
-// globalThis cast in `ambientEnv()` so it can't collide with @types/node's
-// `Process` typing when that package is present elsewhere in the workspace.
-declare global {
-  function fetch(input: string, init?: unknown): Promise<FetchResponse>;
-}
-
 /** The slice of the Fetch Response we consume. */
 export interface FetchResponse {
   ok: boolean;
@@ -30,6 +21,17 @@ export type FetchLike = (input: string, init?: unknown) => Promise<FetchResponse
 export function ambientEnv(): EnvLike {
   const proc = (globalThis as { process?: { env?: EnvLike } }).process;
   return proc?.env ?? {};
+}
+
+/**
+ * The global fetch, typed as FetchLike via a globalThis cast. We do NOT declare
+ * a global `fetch` (that augmentation leaks across the whole program and would
+ * clobber the real fetch type for other packages compiled alongside this one).
+ */
+export function ambientFetch(): FetchLike {
+  const f = (globalThis as { fetch?: FetchLike }).fetch;
+  if (!f) throw new Error("global fetch is not available in this runtime");
+  return f;
 }
 
 /** Pure, dependency-free base64url encoder (replaces Buffer for tokens). */
