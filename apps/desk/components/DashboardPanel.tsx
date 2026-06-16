@@ -3,7 +3,8 @@ import type { DealStage } from "@parcel/types";
 import { getDealViews } from "@/lib/views";
 import { usd } from "@/lib/format";
 
-const MONTHLY_GOAL = 10_000; // CLAUDE.md: net $10k/month (~one $12k assignment)
+const MONTHLY_GOAL = 10_000; // CLAUDE.md: net $10k/month (~one $10k assignment)
+const TARGET_FEE = 10_000; // research-backed planning fee (docs/RESEARCH-wholesaling.md)
 
 // Deals whose fee counts toward "money in motion this month": those that have
 // cleared the human gate (under contract → assigned → closed).
@@ -35,6 +36,7 @@ export async function DashboardPanel() {
     (v) => v.underwrite?.verdict === "clear",
   ).length;
   const pct = Math.min(100, Math.round((monthFee / MONTHLY_GOAL) * 100));
+  const dealsToGoal = Math.max(0, Math.ceil((MONTHLY_GOAL - monthFee) / TARGET_FEE));
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -73,7 +75,29 @@ export async function DashboardPanel() {
           />
         </div>
       </div>
+
+      <div className="mt-5 border-t border-slate-100 pt-3">
+        <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">
+          Funnel benchmarks (research) · ≈ {dealsToGoal} more assignment
+          {dealsToGoal === 1 ? "" : "s"} to goal
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <Bench label="Leads / deal" value="~66" />
+          <Bench label="Offers / deal" value="~10–15" />
+          <Bench label="Fee / deal" value={usd(TARGET_FEE)} />
+          <Bench label="Marketing / deal" value="$4–9k" />
+        </div>
+      </div>
     </section>
+  );
+}
+
+function Bench({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded bg-slate-50 px-3 py-2">
+      <div className="text-xs text-slate-400">{label}</div>
+      <div className="text-base font-semibold text-slate-800">{value}</div>
+    </div>
   );
 }
 

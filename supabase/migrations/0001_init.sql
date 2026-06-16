@@ -36,7 +36,7 @@ create table if not exists underwrites (
   id uuid primary key default gen_random_uuid(),
   property_id uuid references properties(id) on delete cascade,
   arv numeric, repairs numeric,
-  rule_pct numeric default 0.70, fee_target numeric default 12000,
+  rule_pct numeric default 0.70, fee_target numeric default 10000,
   buyer_ceiling numeric,                -- arv*rule_pct - repairs
   your_mao numeric,                     -- buyer_ceiling - fee_target
   fee_potential numeric,                -- buyer_ceiling - asking

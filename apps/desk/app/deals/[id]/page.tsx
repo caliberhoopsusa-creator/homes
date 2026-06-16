@@ -9,6 +9,7 @@ import {
   getUnderwriteForProperty,
 } from "@/lib/data";
 import { matchScore } from "@/lib/match";
+import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
 import { SpreadBar } from "@/components/SpreadBar";
 import { usd } from "@/lib/format";
 
@@ -64,6 +65,9 @@ export default async function DealDetailPage({
       ),
     }))
     .sort((a, b) => b.result.score - a.result.score);
+
+  // Disposition: top qualifying buyers get a 24-hr exclusive, then blast the rest.
+  const dispo = buildDispoPlan(ranked);
 
   return (
     <div className="space-y-6">
@@ -154,12 +158,26 @@ export default async function DealDetailPage({
 
       {/* buyer matches */}
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-700">
-          Buyer matches{" "}
+        <h2 className="mb-1 text-sm font-semibold text-slate-700">
+          Buyer matches &amp; disposition{" "}
           <span className="text-xs font-normal text-slate-400">
             (ranked by matchScore)
           </span>
         </h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Dispo plan: send to the top{" "}
+          <span className="font-medium text-slate-700">
+            {dispo.exclusive.length}
+          </span>{" "}
+          qualifying buyer{dispo.exclusive.length === 1 ? "" : "s"} with a{" "}
+          <span className="font-medium text-slate-700">
+            {dispo.exclusiveHours}h exclusive
+          </span>{" "}
+          window, then blast the remaining{" "}
+          <span className="font-medium text-slate-700">{dispo.blast.length}</span>.
+          {dispo.exclusive.length === 0 &&
+            " No qualifying buyers yet — add buy-boxes or widen criteria."}
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -167,6 +185,7 @@ export default async function DealDetailPage({
                 <th className="py-1 pr-4">Buyer</th>
                 <th className="py-1 pr-4">Type</th>
                 <th className="py-1 pr-4">Score</th>
+                <th className="py-1 pr-4">Tier</th>
                 <th className="py-1 pr-4">Qualifies</th>
                 <th className="py-1">Why</th>
               </tr>
@@ -177,6 +196,9 @@ export default async function DealDetailPage({
                   <td className="py-2 pr-4 font-medium">{buyer.name}</td>
                   <td className="py-2 pr-4 text-slate-500">{buyer.type}</td>
                   <td className="py-2 pr-4">{result.score.toFixed(2)}</td>
+                  <td className="py-2 pr-4">
+                    <TierBadge tier={dispo.tierOf(buyer.id)} />
+                  </td>
                   <td className="py-2 pr-4">
                     {result.qualifies ? (
                       <span className="text-green-700">✓ qualifies</span>
@@ -195,6 +217,22 @@ export default async function DealDetailPage({
       </section>
     </div>
   );
+}
+
+function TierBadge({ tier }: { tier: DispoTier }) {
+  if (tier === "exclusive")
+    return (
+      <span className="rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+        24h exclusive
+      </span>
+    );
+  if (tier === "blast")
+    return (
+      <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+        blast
+      </span>
+    );
+  return <span className="text-xs text-slate-400">—</span>;
 }
 
 function Fact({

@@ -63,7 +63,7 @@ export const underwriteInput = z.object({
   repairs: z.number().nonnegative(),
   asking: z.number().nonnegative(),
   rule_pct: z.number().positive().max(1).default(0.7),
-  fee_target: z.number().nonnegative().default(12000),
+  fee_target: z.number().nonnegative().default(10000),
 });
 export type UnderwriteInput = z.infer<typeof underwriteInput>;
 

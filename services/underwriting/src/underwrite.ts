@@ -12,7 +12,7 @@ export interface UnderwriteParams {
   asking: number;
   /** Wholesaler rule. Default 0.70. */
   rulePct?: number;
-  /** Assignment fee we want to clear. Default $12,000. */
+  /** Assignment fee we want to clear. Default $10,000 (research-backed planning number). */
   feeTarget?: number;
 }
 
@@ -33,7 +33,9 @@ export interface UnderwriteResult {
 }
 
 export const DEFAULT_RULE_PCT = 0.7;
-export const DEFAULT_FEE_TARGET = 12000;
+// $10k is the prudent planning fee per the wholesaling research (docs/RESEARCH-wholesaling.md);
+// the vendor-cited "$13k average" is inflated. $10k keeps "$10k/mo ≈ ~1 deal" conservative.
+export const DEFAULT_FEE_TARGET = 10000;
 
 /**
  * Run the 70% rule. Verdict thresholds (PRD §6.3):

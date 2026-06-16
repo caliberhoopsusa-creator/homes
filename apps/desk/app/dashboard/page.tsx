@@ -9,7 +9,7 @@ export default function DashboardPage() {
       <RealtimeBoundary tables={["deals", "contracts"]} />
       <h1 className="text-xl font-semibold">Dashboard</h1>
       <p className="max-w-2xl text-sm text-slate-500">
-        Pace toward the $10k/month goal (~one $12k assignment). Money-in-motion
+        Pace toward the $10k/month goal (~one $10k assignment). Money-in-motion
         sums fee potential on deals that cleared the human gate this month;
         total deal count paces the Montana broker-license line.
       </p>

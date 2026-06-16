@@ -244,3 +244,16 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   statute + RE-attorney check** (existing hard gate).
 - No code changed this session (research + docs only). Open follow-ups: (a) flip `fee_target` to $10k + add
   funnel KPI targets to the desk dashboard; (b) Montana-specific legal deep-dive; (c) optional SessionStart hook.
+
+### Session 3 — 2026-06-16 (act on the research: fee, dispo, KPIs)
+- **`fee_target` $12k → $10k** (research-backed) across the migration default, `@parcel/types` zod default,
+  `DEFAULT_FEE_TARGET`, and the boundary tests; copy fixes ($12k→$10k) in root CLAUDE.md + desk dashboard.
+- **Disposition flow built** (`apps/desk/lib/dispo.ts` + deal page): `buildDispoPlan(ranked)` selects the top
+  N qualifying buyers for a 24-hr exclusive tier, then a blast tier; deal page shows a dispo summary + a Tier
+  badge per buyer. Pure logic over `matchScore`; implements the research's "top 3–5, 24h window, then blast".
+- **Funnel KPI panel** added to the dashboard: research benchmarks (~66 leads/deal, ~10–15 offers/deal,
+  $10k fee, $4–9k marketing) + "≈ N more assignments to goal".
+- Verified: 8/8 typecheck, 80 tests (underwriting still 100% on the math), desk builds.
+- Still open / NOT free: provision Supabase (free tier) + real data-provider key (paid, or build free
+  county-records ingesters) + SendGrid (free tier) + domain + **attorney-reviewed contract / MT legal check**
+  (the one true hard gate). A `docs/GO-LIVE.md` checklist (free vs paid, ordered) is the next doc to write.

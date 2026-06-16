@@ -14,8 +14,8 @@ describe("underwrite() — the 70% math", () => {
 
   it("computes yourMao = buyerCeiling - feeTarget", () => {
     const r = underwrite({ arv: 300_000, repairs: 40_000, asking: 150_000 });
-    // 170k - 12k = 158k
-    expect(r.yourMao).toBe(158_000);
+    // 170k - 10k = 160k
+    expect(r.yourMao).toBe(160_000);
   });
 
   it("computes feePotential = buyerCeiling - asking", () => {
@@ -24,17 +24,17 @@ describe("underwrite() — the 70% math", () => {
     expect(r.feePotential).toBe(20_000);
   });
 
-  it("defaults rulePct to 0.70 and feeTarget to 12000", () => {
+  it("defaults rulePct to 0.70 and feeTarget to 10000", () => {
     const r = underwrite({ arv: 100_000, repairs: 0, asking: 0 });
     expect(r.rulePct).toBe(DEFAULT_RULE_PCT);
     expect(r.feeTarget).toBe(DEFAULT_FEE_TARGET);
   });
 
   describe("verdict thresholds", () => {
-    it("clear when feePotential >= feeTarget", () => {
-      // buyerCeiling 170k, asking 158k -> feePotential 12k == feeTarget
-      const r = underwrite({ arv: 300_000, repairs: 40_000, asking: 158_000 });
-      expect(r.feePotential).toBe(12_000);
+    it("clear when feePotential >= feeTarget (exact boundary)", () => {
+      // buyerCeiling 170k, asking 160k -> feePotential 10k == feeTarget(10k)
+      const r = underwrite({ arv: 300_000, repairs: 40_000, asking: 160_000 });
+      expect(r.feePotential).toBe(10_000);
       expect(r.verdict).toBe("clear");
     });
 

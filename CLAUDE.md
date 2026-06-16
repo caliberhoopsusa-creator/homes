@@ -2,7 +2,7 @@
 
 Automated wholesale acquisition engine: source distressed properties → underwrite →
 compliant outreach → classify replies → **gated** contract → warm leads in the desk.
-We earn the assignment-fee spread; target ~$10k/month (≈ one $12k assignment).
+We earn the assignment-fee spread; target ~$10k/month (≈ one $10k assignment).
 
 **`PRD.md` is the source of truth — re-read it if unsure.**
 **`docs/SESSION-LOG.md` = current state + per-session changelog — read it to catch up.**
