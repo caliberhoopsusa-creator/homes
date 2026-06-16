@@ -52,6 +52,8 @@ export default async function PipelinePage() {
                     deal={v.deal}
                     property={v.property}
                     underwrite={v.underwrite}
+                    assignedBuyer={v.assignedBuyer}
+                    contract={v.contract}
                   />
                 ))}
               </div>

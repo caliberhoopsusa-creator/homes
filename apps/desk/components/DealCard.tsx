@@ -1,10 +1,26 @@
 "use client";
 import Link from "next/link";
 import { useTransition } from "react";
-import type { DealStage, Property, Underwrite, Deal } from "@parcel/types";
+import type {
+  Buyer,
+  Contract,
+  ContractStatus,
+  Deal,
+  DealStage,
+  Property,
+  Underwrite,
+} from "@parcel/types";
 import { VerdictChip } from "./VerdictChip";
 import { usd } from "@/lib/format";
 import { moveDealAction } from "@/app/actions";
+
+const CONTRACT_CLASS: Record<ContractStatus, string> = {
+  queued: "bg-amber-100 text-amber-800",
+  approved: "bg-blue-100 text-blue-800",
+  sent: "bg-green-100 text-green-800",
+  signed: "bg-green-200 text-green-900",
+  void: "bg-slate-200 text-slate-600",
+};
 
 const STAGES: DealStage[] = [
   "Lead",
@@ -18,10 +34,14 @@ export function DealCard({
   deal,
   property,
   underwrite,
+  assignedBuyer,
+  contract,
 }: {
   deal: Deal;
   property: Property | null;
   underwrite: Underwrite | null;
+  assignedBuyer?: Buyer | null;
+  contract?: Contract | null;
 }) {
   const [pending, start] = useTransition();
   const idx = STAGES.indexOf(deal.stage);
@@ -55,6 +75,23 @@ export function DealCard({
           {usd(underwrite?.fee_potential)}
         </span>
       </div>
+
+      {(assignedBuyer || contract) && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2">
+          {assignedBuyer && (
+            <span className="truncate text-xs text-slate-600" title={assignedBuyer.name ?? ""}>
+              → {assignedBuyer.name}
+            </span>
+          )}
+          {contract && (
+            <span
+              className={`rounded px-1.5 py-0.5 text-[11px] ${CONTRACT_CLASS[contract.status]}`}
+            >
+              contract {contract.status}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <button
