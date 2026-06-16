@@ -6,12 +6,12 @@
 /** A read-only environment bag (a subset of process.env). */
 export type EnvLike = Record<string, string | undefined>;
 
-// Ambient declarations for the few Node/Web globals this service references.
-// Real runtimes (Node 18+, Bun, edge) provide these; declaring them locally
-// avoids a hard dependency on @types/node while keeping strict typechecking.
+// Ambient declaration for the one Web global this service references directly.
+// Real runtimes (Node 18+, Bun, edge) provide `fetch`; declaring the minimal
+// shape locally avoids a hard dependency on @types/node. `process` is read via a
+// globalThis cast in `ambientEnv()` so it can't collide with @types/node's
+// `Process` typing when that package is present elsewhere in the workspace.
 declare global {
-  // eslint-disable-next-line no-var
-  var process: { env: EnvLike } | undefined;
   function fetch(input: string, init?: unknown): Promise<FetchResponse>;
 }
 
@@ -28,7 +28,8 @@ export type FetchLike = (input: string, init?: unknown) => Promise<FetchResponse
 
 /** Read the ambient environment safely, even where `process` is undefined. */
 export function ambientEnv(): EnvLike {
-  return typeof process !== "undefined" && process?.env ? process.env : {};
+  const proc = (globalThis as { process?: { env?: EnvLike } }).process;
+  return proc?.env ?? {};
 }
 
 /** Pure, dependency-free base64url encoder (replaces Buffer for tokens). */

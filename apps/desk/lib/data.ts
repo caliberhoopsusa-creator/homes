@@ -1,0 +1,200 @@
+// The single data abstraction every page reads/writes through. It picks
+// Supabase when env is configured, else mutates in-memory fixtures — so the
+// desk runs with zero setup and swapping to live is a one-flag change
+// (just set NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY).
+import "server-only";
+import type {
+  Buyer,
+  BuyerInsert,
+  Contract,
+  ContractStatus,
+  Deal,
+  DealStage,
+  Match,
+  Owner,
+  Property,
+  Underwrite,
+} from "@parcel/types";
+import { getSupabase, isLive } from "./supabase";
+import * as fx from "./fixtures";
+
+// Mutable in-memory copies so fixture writes persist for the process lifetime.
+const mem = {
+  properties: [...fx.properties] as Property[],
+  owners: [...fx.owners] as Owner[],
+  underwrites: [...fx.underwrites] as Underwrite[],
+  deals: fx.deals.map((d) => ({ ...d })) as Deal[],
+  buyers: fx.buyers.map((b) => ({ ...b })) as Buyer[],
+  matches: fx.matches.map((m) => ({ ...m })) as Match[],
+  contracts: fx.contracts.map((c) => ({ ...c })) as Contract[],
+};
+
+const newId = (prefix: string) =>
+  `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+
+// ── reads ────────────────────────────────────────────────────────────────
+export async function getProperties(): Promise<Property[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.properties;
+  const { data } = await sb.from("properties").select("*");
+  return (data as Property[]) ?? [];
+}
+
+export async function getProperty(id: string): Promise<Property | null> {
+  const sb = getSupabase();
+  if (!sb) return mem.properties.find((p) => p.id === id) ?? null;
+  const { data } = await sb.from("properties").select("*").eq("id", id).single();
+  return (data as Property) ?? null;
+}
+
+export async function getOwnerForProperty(
+  propertyId: string,
+): Promise<Owner | null> {
+  const sb = getSupabase();
+  if (!sb) return mem.owners.find((o) => o.property_id === propertyId) ?? null;
+  const { data } = await sb
+    .from("owners")
+    .select("*")
+    .eq("property_id", propertyId)
+    .limit(1);
+  return ((data as Owner[]) ?? [])[0] ?? null;
+}
+
+export async function getUnderwriteForProperty(
+  propertyId: string,
+): Promise<Underwrite | null> {
+  const sb = getSupabase();
+  if (!sb)
+    return mem.underwrites.find((u) => u.property_id === propertyId) ?? null;
+  const { data } = await sb
+    .from("underwrites")
+    .select("*")
+    .eq("property_id", propertyId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  return ((data as Underwrite[]) ?? [])[0] ?? null;
+}
+
+export async function getDeals(): Promise<Deal[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.deals;
+  const { data } = await sb.from("deals").select("*");
+  return (data as Deal[]) ?? [];
+}
+
+export async function getDeal(id: string): Promise<Deal | null> {
+  const sb = getSupabase();
+  if (!sb) return mem.deals.find((d) => d.id === id) ?? null;
+  const { data } = await sb.from("deals").select("*").eq("id", id).single();
+  return (data as Deal) ?? null;
+}
+
+export async function getBuyers(): Promise<Buyer[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.buyers;
+  const { data } = await sb.from("buyers").select("*");
+  return (data as Buyer[]) ?? [];
+}
+
+export async function getMatchesForDeal(dealId: string): Promise<Match[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.matches.filter((m) => m.deal_id === dealId);
+  const { data } = await sb.from("matches").select("*").eq("deal_id", dealId);
+  return (data as Match[]) ?? [];
+}
+
+export async function getContracts(): Promise<Contract[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.contracts;
+  const { data } = await sb.from("contracts").select("*");
+  return (data as Contract[]) ?? [];
+}
+
+// ── writes ───────────────────────────────────────────────────────────────
+export async function setDealStage(
+  id: string,
+  stage: DealStage,
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) {
+    const d = mem.deals.find((x) => x.id === id);
+    if (d) d.stage = stage;
+    return;
+  }
+  await sb.from("deals").update({ stage }).eq("id", id);
+}
+
+export async function createBuyer(input: BuyerInsert): Promise<Buyer> {
+  const sb = getSupabase();
+  const row: Buyer = {
+    id: input.id ?? newId("buyer"),
+    name: input.name ?? null,
+    type: input.type ?? null,
+    min_price: input.min_price ?? null,
+    max_price: input.max_price ?? null,
+    min_beds: input.min_beds ?? null,
+    areas: input.areas ?? null,
+    max_repairs: input.max_repairs ?? null,
+    notes: input.notes ?? null,
+    created_at: input.created_at ?? new Date().toISOString(),
+  };
+  if (!sb) {
+    mem.buyers.push(row);
+    return row;
+  }
+  const { data } = await sb.from("buyers").insert(row).select().single();
+  return (data as Buyer) ?? row;
+}
+
+export async function updateBuyer(
+  id: string,
+  patch: Partial<BuyerInsert>,
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) {
+    const b = mem.buyers.find((x) => x.id === id);
+    if (b) Object.assign(b, patch);
+    return;
+  }
+  await sb.from("buyers").update(patch).eq("id", id);
+}
+
+export async function deleteBuyer(id: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) {
+    const i = mem.buyers.findIndex((x) => x.id === id);
+    if (i >= 0) mem.buyers.splice(i, 1);
+    return;
+  }
+  await sb.from("buyers").delete().eq("id", id);
+}
+
+// The human gate: queued -> approved -> sent. NEVER skips straight to sent.
+const NEXT_CONTRACT_STATUS: Partial<Record<ContractStatus, ContractStatus>> = {
+  queued: "approved",
+  approved: "sent",
+};
+
+export async function advanceContract(id: string): Promise<ContractStatus | null> {
+  const sb = getSupabase();
+  if (!sb) {
+    const c = mem.contracts.find((x) => x.id === id);
+    if (!c) return null;
+    const next = NEXT_CONTRACT_STATUS[c.status];
+    if (next) c.status = next;
+    return c.status;
+  }
+  const { data } = await sb
+    .from("contracts")
+    .select("status")
+    .eq("id", id)
+    .single();
+  const current = (data as { status: ContractStatus } | null)?.status;
+  if (!current) return null;
+  const next = NEXT_CONTRACT_STATUS[current];
+  if (!next) return current;
+  await sb.from("contracts").update({ status: next }).eq("id", id);
+  return next;
+}
+
+export { isLive };
