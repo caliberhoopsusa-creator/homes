@@ -23,6 +23,12 @@ importers:
       '@parcel/intake':
         specifier: workspace:*
         version: link:../../services/intake
+      '@parcel/skiptrace':
+        specifier: workspace:*
+        version: link:../../services/skiptrace
+      '@parcel/sourcing':
+        specifier: workspace:*
+        version: link:../../services/sourcing
       '@parcel/types':
         specifier: workspace:*
         version: link:../../packages/types
