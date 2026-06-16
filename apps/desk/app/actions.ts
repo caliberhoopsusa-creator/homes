@@ -9,9 +9,11 @@ import {
   assignDealToBuyer,
   createBuyer,
   deleteBuyer,
+  dispatchToBuyers,
   setDealStage,
   updateBuyer,
 } from "@/lib/data";
+import { inferBuyersFromCashSales, type CashSaleRecord } from "@/lib/buyers-import";
 
 export async function moveDealAction(id: string, stage: DealStage) {
   await setDealStage(id, stage);
@@ -70,4 +72,33 @@ export async function assignDealAction(dealId: string, buyerId: string) {
   revalidatePath("/");
   revalidatePath("/contracts");
   revalidatePath("/dashboard");
+}
+
+export async function dispatchDealAction(
+  dealId: string,
+  tier: "exclusive" | "blast",
+) {
+  const count = await dispatchToBuyers(dealId, tier);
+  revalidatePath(`/deals/${dealId}`);
+  return count;
+}
+
+// Import cash-buyer buy-boxes from pasted county cash-closing records (JSON
+// array). Infers one buy-box per buyer and adds them via the data layer
+// (fixtures or Supabase). Returns how many buyers were created.
+export async function importBuyersAction(
+  recordsJson: string,
+): Promise<{ inserted: number; error?: string }> {
+  let records: CashSaleRecord[];
+  try {
+    const parsed = JSON.parse(recordsJson);
+    if (!Array.isArray(parsed)) return { inserted: 0, error: "Expected a JSON array of records." };
+    records = parsed as CashSaleRecord[];
+  } catch {
+    return { inserted: 0, error: "Invalid JSON." };
+  }
+  const buyers = inferBuyersFromCashSales(records);
+  for (const b of buyers) await createBuyer(b);
+  revalidatePath("/buyers");
+  return { inserted: buyers.length };
 }

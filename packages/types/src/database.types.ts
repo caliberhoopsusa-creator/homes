@@ -171,6 +171,8 @@ export interface Match {
   buyer_id: string;
   score: number | null;
   qualifies: boolean | null;
+  /** When this deal was dispatched to the buyer (disposition send), if at all. */
+  sent_at: string | null;
 }
 
 // ── insert shapes (db-defaulted columns optional) ────────────────────────────

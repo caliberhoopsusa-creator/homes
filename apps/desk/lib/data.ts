@@ -212,7 +212,9 @@ export async function upsertMatchesForDeal(dealId: string): Promise<void> {
   ]);
   if (!property) return;
 
-  const rows: Match[] = computeMatchRows(
+  // Base rows (score/qualifies). sent_at is owned by dispatchToBuyers — never
+  // clobber it here, so re-persisting a deal's matches keeps its dispatch state.
+  const base = computeMatchRows(
     {
       property: { beds: property.beds, city: property.city, state: property.state },
       price: uw?.buyer_ceiling ?? 0,
@@ -228,10 +230,48 @@ export async function upsertMatchesForDeal(dealId: string): Promise<void> {
 
   const sb = getSupabase();
   if (!sb) {
-    mem.matches = mem.matches.filter((m) => m.deal_id !== dealId).concat(rows);
+    const prior = new Map(
+      mem.matches.filter((m) => m.deal_id === dealId).map((m) => [m.buyer_id, m.sent_at] as const),
+    );
+    mem.matches = mem.matches
+      .filter((m) => m.deal_id !== dealId)
+      .concat(base.map((b) => ({ ...b, sent_at: prior.get(b.buyer_id) ?? null })));
     return;
   }
-  await sb.from("matches").upsert(rows, { onConflict: "deal_id,buyer_id" });
+  // Upsert only score/qualifies columns → sent_at is preserved by the DB.
+  await sb.from("matches").upsert(base, { onConflict: "deal_id,buyer_id" });
+}
+
+/** Top-N qualifying buyers get the exclusive tier (matches buildDispoPlan's default). */
+const DISPO_TOP_N = 5;
+
+// Disposition dispatch: send a deal to its exclusive (top-N qualifying) or blast
+// tier, recording matches.sent_at. (When live, this is where buyer emails would
+// queue via the outreach engine; for now it records the dispatch.) Returns count.
+export async function dispatchToBuyers(
+  dealId: string,
+  tier: "exclusive" | "blast",
+): Promise<number> {
+  await upsertMatchesForDeal(dealId);
+  const qualifying = (await getMatchesForDeal(dealId))
+    .filter((m) => m.qualifies)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const targets = tier === "exclusive"
+    ? qualifying.slice(0, DISPO_TOP_N)
+    : qualifying.slice(DISPO_TOP_N);
+  const ids = targets.map((m) => m.buyer_id);
+  if (ids.length === 0) return 0;
+
+  const at = new Date().toISOString();
+  const sb = getSupabase();
+  if (!sb) {
+    for (const m of mem.matches) {
+      if (m.deal_id === dealId && ids.includes(m.buyer_id)) m.sent_at = at;
+    }
+    return ids.length;
+  }
+  await sb.from("matches").update({ sent_at: at }).eq("deal_id", dealId).in("buyer_id", ids);
+  return ids.length;
 }
 
 // Assign a deal to a buyer: persist the match snapshot, advance the deal to

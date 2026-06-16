@@ -271,8 +271,17 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   - UI: per-qualifying-buyer **Assign** action on the deal page + "Assigned to X" banner; BuyerForm/Row
     get email/phone; the Contracts queue shows the linked buyer.
   - Verified: 8/8 typecheck, **99 tests** (desk +computeMatchRows), desk builds.
-- **Next: Phase B** — disposition dispatch (send-to-tier + `matches.sent_at`) + wire the existing
-  `/api/buyers/import` (cash-closings) to a Buyers-page button.
+- **Buyer + deal engine — Phase B** (disposition dispatch + cash-closings import):
+  - Keystone: `matches.sent_at` (records a disposition send per buyer).
+  - `lib/data.ts dispatchToBuyers(dealId, tier)` — stamps `sent_at` for the top-N qualifying
+    (exclusive) or the rest (blast); `upsertMatchesForDeal` now **preserves** `sent_at` on re-persist.
+    (When live, this is where buyer emails queue via outreach; for now it records the dispatch.)
+  - Actions: `dispatchDealAction` + `importBuyersAction` (parses pasted cash-closing JSON →
+    `inferBuyersFromCashSales` → `createBuyer`, dual-path).
+  - UI: **Send to exclusive (24h)** / **Blast remaining** buttons + per-buyer "sent ✓" on the deal page;
+    **Import from cash-closings** panel on the Buyers page (wires the previously-unused importer).
+  - Verified: 8/8 typecheck, **99 tests**, desk builds. The in-app money loop now: match → dispatch →
+    assign → queued contract → human Approve & send.
 
 ### Session 5 — 2026-06-16 (security review + fixes)
 - Ran `/security-review`. Passing: no hardcoded secrets, providers throw on missing keys, service-role

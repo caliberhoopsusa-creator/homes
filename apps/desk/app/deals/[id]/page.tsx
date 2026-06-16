@@ -4,6 +4,7 @@ import { underwrite } from "@parcel/underwriting";
 import {
   getBuyers,
   getDeal,
+  getMatchesForDeal,
   getOwnerForProperty,
   getProperty,
   getUnderwriteForProperty,
@@ -12,6 +13,7 @@ import { matchScore } from "@/lib/match";
 import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
 import { SpreadBar } from "@/components/SpreadBar";
 import { AssignButton } from "@/components/AssignButton";
+import { DispatchButtons } from "@/components/DispatchButtons";
 import { usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +30,14 @@ export default async function DealDetailPage({
   const property = deal.property_id
     ? await getProperty(deal.property_id)
     : null;
-  const [owner, uwRow, buyers] = await Promise.all([
+  const [owner, uwRow, buyers, persistedMatches] = await Promise.all([
     property ? getOwnerForProperty(property.id) : Promise.resolve(null),
     property ? getUnderwriteForProperty(property.id) : Promise.resolve(null),
     getBuyers(),
+    getMatchesForDeal(id),
   ]);
+  // buyer_id → dispatch time, so we can show which buyers this deal was sent to.
+  const sentByBuyer = new Map(persistedMatches.map((m) => [m.buyer_id, m.sent_at]));
 
   // Re-run the canonical engine for the spread bar so the desk's math is
   // always the engine's math. ARV/repairs come from the stored underwrite;
@@ -193,6 +198,11 @@ export default async function DealDetailPage({
           {dispo.exclusive.length === 0 &&
             " No qualifying buyers yet — add buy-boxes or widen criteria."}
         </p>
+        <DispatchButtons
+          dealId={deal.id}
+          exclusiveCount={dispo.exclusive.length}
+          blastCount={dispo.blast.length}
+        />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -214,6 +224,9 @@ export default async function DealDetailPage({
                   <td className="py-2 pr-4">{result.score.toFixed(2)}</td>
                   <td className="py-2 pr-4">
                     <TierBadge tier={dispo.tierOf(buyer.id)} />
+                    {sentByBuyer.get(buyer.id) && (
+                      <span className="ml-1 text-xs text-green-600">sent ✓</span>
+                    )}
                   </td>
                   <td className="py-2 pr-4">
                     {result.qualifies ? (

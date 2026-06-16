@@ -117,6 +117,7 @@ create table if not exists matches (
   deal_id uuid references deals(id) on delete cascade,
   buyer_id uuid references buyers(id) on delete cascade,
   score int, qualifies boolean,
+  sent_at timestamptz,                  -- disposition dispatch time (null = not sent)
   primary key (deal_id, buyer_id)
 );
 

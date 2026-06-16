@@ -360,10 +360,10 @@ export const buyers: Buyer[] = [
 ];
 
 export const matches: Match[] = [
-  { deal_id: "deal-5", buyer_id: "buyer-1", score: 0.92, qualifies: true },
-  { deal_id: "deal-5", buyer_id: "buyer-3", score: 0.81, qualifies: true },
-  { deal_id: "deal-6", buyer_id: "buyer-1", score: 0.88, qualifies: true },
-  { deal_id: "deal-6", buyer_id: "buyer-3", score: 0.79, qualifies: true },
+  { deal_id: "deal-5", buyer_id: "buyer-1", score: 92, qualifies: true, sent_at: null },
+  { deal_id: "deal-5", buyer_id: "buyer-3", score: 81, qualifies: true, sent_at: null },
+  { deal_id: "deal-6", buyer_id: "buyer-1", score: 88, qualifies: true, sent_at: iso(9) },
+  { deal_id: "deal-6", buyer_id: "buyer-3", score: 79, qualifies: true, sent_at: null },
 ];
 
 export const contracts: Contract[] = [
