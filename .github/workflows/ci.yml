@@ -11,9 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Reads the pnpm version from package.json's `packageManager` field.
+      # (Do NOT also pass `version:` here — pnpm errors "Multiple versions specified".)
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
