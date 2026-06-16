@@ -257,3 +257,20 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 - Still open / NOT free: provision Supabase (free tier) + real data-provider key (paid, or build free
   county-records ingesters) + SendGrid (free tier) + domain + **attorney-reviewed contract / MT legal check**
   (the one true hard gate). A `docs/GO-LIVE.md` checklist (free vs paid, ordered) is the next doc to write.
+
+### Session 4 — 2026-06-16 (go-live: free build + payment-block research)
+- Orchestrated a lead deep-research agent + per-block sub-agents on the "payment blocks" (cheapest stack,
+  deliverability, Montana legal). Persisted findings to **`docs/GO-LIVE.md`** (ordered free-vs-paid runbook),
+  **`docs/DELIVERABILITY.md`** (SPF/DKIM/DMARC + Google/Yahoo 2024 rules + warmup ramp), **`docs/MONTANA-LEGAL.md`**.
+- **Built the FREE data path:** `CountyRecordsProvider` (`PROPERTY_PROVIDER=county`) — pulls public county
+  records (normalized JSON per source, `COUNTY_RECORDS_SOURCES`) with the ToS denylist. Keystone: added
+  `county` to `PropertySource` + zod enum. Also **fixed a latent bug**: `runPull` dropped null-coord
+  candidates (radius filter), so county/Firecrawl results were silently discarded — now kept. 89 tests.
+- **Key research takeaways:** MT has **no wholesaling statute** (legal via equitable-interest assignment; the
+  risk is the unlicensed-broker line, MCA 37-51-102/103/301; equitable-interest ≠ "owner" is the gray area →
+  **attorney review still required**, double-close is the safest structure). SendGrid free tier **retired May
+  2025** → ~$20/mo Essentials + ~$10/yr domain; SPF/DKIM/DMARC + warmup are free. **Cheapest viable stack ≈
+  $20/mo + $10/yr** using the free county data path + Supabase free tier; AI is ~$1–5/mo.
+- GitHub: filed issues #1–#4 (#1 Go-Live, #2 deliverability **fulfilled by the new docs**; #3 county provider
+  **built**; #4 live-Supabase still blocked on external infra). Copilot auto-assign unavailable via this MCP.
+- Verified: 8/8 typecheck, **89 tests**, desk builds.
