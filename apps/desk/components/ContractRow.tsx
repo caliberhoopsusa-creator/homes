@@ -48,7 +48,16 @@ export function ContractRow({
             className={`rounded px-1.5 py-0.5 text-xs ${STATUS_CLASS[contract.status]}`}
           >
             {contract.status}
-          </span>
+          </span>{" "}
+          ·{" "}
+          <a
+            href={`/api/contracts/${contract.id}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            View PDF
+          </a>
         </div>
       </div>
       {action ? (

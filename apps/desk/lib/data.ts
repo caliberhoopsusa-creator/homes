@@ -111,6 +111,13 @@ export async function getContracts(): Promise<Contract[]> {
   return (data as Contract[]) ?? [];
 }
 
+export async function getContract(id: string): Promise<Contract | null> {
+  const sb = getSupabase();
+  if (!sb) return mem.contracts.find((c) => c.id === id) ?? null;
+  const { data } = await sb.from("contracts").select("*").eq("id", id).single();
+  return (data as Contract) ?? null;
+}
+
 // ── writes ───────────────────────────────────────────────────────────────
 export async function setDealStage(
   id: string,

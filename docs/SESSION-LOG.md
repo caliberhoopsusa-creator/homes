@@ -282,6 +282,11 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
     **Import from cash-closings** panel on the Buyers page (wires the previously-unused importer).
   - Verified: 8/8 typecheck, **99 tests**, desk builds. The in-app money loop now: match → dispatch →
     assign → queued contract → human Approve & send.
+- **Contract PDF in the desk:** `GET /api/contracts/[id]/pdf` regenerates the assignment-agreement PDF
+  on demand (contract + property + owner + buyer → `fillAssignmentTemplate` + `renderContractPdf` from
+  `@parcel/intake`; no storage needed). Stamps DRAFT until `CONTRACT_TEMPLATE_REVIEWED=true` (the MT gate).
+  `getContract(id)` added; Contracts queue rows get a **View PDF** link. **Runtime-verified**: 200,
+  `application/pdf`, `%PDF-`, ~2KB, carries the attorney-review notice + purchase price.
 
 ### Session 5 — 2026-06-16 (security review + fixes)
 - Ran `/security-review`. Passing: no hardcoded secrets, providers throw on missing keys, service-role
