@@ -273,4 +273,10 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   $20/mo + $10/yr** using the free county data path + Supabase free tier; AI is ~$1–5/mo.
 - GitHub: filed issues #1–#4 (#1 Go-Live, #2 deliverability **fulfilled by the new docs**; #3 county provider
   **built**; #4 live-Supabase still blocked on external infra). Copilot auto-assign unavailable via this MCP.
-- Verified: 8/8 typecheck, **89 tests**, desk builds.
+- **Closed two real free gaps:** (1) working **one-click unsubscribe** — `apps/desk/app/api/unsubscribe`
+  (GET + RFC 8058 POST) decodes the per-owner token → `suppressOwnerById` writes a `suppressions` row (the
+  link in every email was previously dead = CAN-SPAM violation). (2) **buyer-list from county cash-closings** —
+  `apps/desk/lib/buyers-import.ts` (`inferBuyersFromCashSales`) + `/api/buyers/import` + `@parcel/db insertBuyers`,
+  building the dispo moat from public deed records.
+- **Added Vitest to the desk** (its pure logic had zero tests): dispo, matchScore, buyers-import — 8 tests.
+- Verified: 8/8 typecheck, **97 tests** (89 services + 8 desk), desk builds.
