@@ -1,6 +1,6 @@
 "use client";
 import { useTransition } from "react";
-import type { Contract, ContractStatus, Property } from "@parcel/types";
+import type { Buyer, Contract, ContractStatus, Property } from "@parcel/types";
 import { advanceContractAction } from "@/app/actions";
 import { usd } from "@/lib/format";
 
@@ -22,9 +22,11 @@ const STATUS_CLASS: Record<ContractStatus, string> = {
 export function ContractRow({
   contract,
   property,
+  buyer,
 }: {
   contract: Contract;
   property: Property | null;
+  buyer?: Buyer | null;
 }) {
   const [pending, start] = useTransition();
   const action = ACTION_LABEL[contract.status];
@@ -32,7 +34,14 @@ export function ContractRow({
   return (
     <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3">
       <div className="text-sm">
-        <div className="font-medium">{property?.address ?? "Unknown property"}</div>
+        <div className="font-medium">
+          {property?.address ?? "Unknown property"}
+          {buyer?.name && (
+            <span className="ml-2 text-xs font-normal text-slate-500">
+              → {buyer.name}
+            </span>
+          )}
+        </div>
         <div className="text-slate-500">
           Offer {usd(contract.offer_price)} ·{" "}
           <span

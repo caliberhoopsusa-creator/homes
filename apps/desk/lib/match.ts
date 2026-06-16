@@ -101,6 +101,27 @@ export function matchScore(deal: MatchInput, buyer: Buyer): MatchResult {
   return { score, qualifies: ok, reasons };
 }
 
+export interface MatchRow {
+  buyer_id: string;
+  /** 0–100 integer (matchScore's 0..1 scaled) — fits the `matches.score` int column. */
+  score: number;
+  qualifies: boolean;
+}
+
+/** Score every buyer against a deal context → persistable match rows, ranked desc. */
+export function computeMatchRows(deal: MatchInput, buyers: Buyer[]): MatchRow[] {
+  return buyers
+    .map((buyer) => {
+      const r = matchScore(deal, buyer);
+      return {
+        buyer_id: buyer.id,
+        score: Math.round(r.score * 100),
+        qualifies: r.qualifies,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
 /** Convenience: build MatchInput from an underwrite result + property. */
 export function matchInputFromUnderwrite(
   property: MatchInput["property"],

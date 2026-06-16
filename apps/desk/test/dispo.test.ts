@@ -14,6 +14,8 @@ function rb(id: string, score: number, qualifies: boolean): RankedBuyer {
       areas: null,
       max_repairs: null,
       notes: null,
+      email: null,
+      phone: null,
       created_at: "",
     } as Buyer,
     result: { score, qualifies, reasons: [] },

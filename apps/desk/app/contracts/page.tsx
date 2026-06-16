@@ -1,15 +1,17 @@
-import { getContracts, getProperties } from "@/lib/data";
+import { getBuyers, getContracts, getProperties } from "@/lib/data";
 import { ContractRow } from "@/components/ContractRow";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContractsPage() {
-  const [contracts, properties] = await Promise.all([
+  const [contracts, properties, buyers] = await Promise.all([
     getContracts(),
     getProperties(),
+    getBuyers(),
   ]);
   const byId = new Map(properties.map((p) => [p.id, p]));
+  const byBuyer = new Map(buyers.map((b) => [b.id, b]));
 
   // Queue first: the human gate is the queued items needing approval.
   const queued = contracts.filter((c) => c.status === "queued");
@@ -38,6 +40,7 @@ export default async function ContractsPage() {
             key={c.id}
             contract={c}
             property={c.property_id ? byId.get(c.property_id) ?? null : null}
+            buyer={c.buyer_id ? byBuyer.get(c.buyer_id) ?? null : null}
           />
         ))}
       </section>

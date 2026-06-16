@@ -306,12 +306,12 @@ export const underwrites: Underwrite[] = [
 ];
 
 export const deals: Deal[] = [
-  { id: "deal-1", property_id: "prop-1", stage: "Lead", notes: "Tax lien filed 2024; absentee owner out of state.", created_at: iso(1) },
-  { id: "deal-2", property_id: "prop-2", stage: "Contacted", notes: "Sent intro offer letter, awaiting reply.", created_at: iso(2) },
-  { id: "deal-3", property_id: "prop-3", stage: "Lead", notes: "Vacant, marginal spread — watch.", created_at: iso(3) },
-  { id: "deal-4", property_id: "prop-4", stage: "Contacted", notes: "Owner replied 'maybe', following up.", created_at: iso(4) },
-  { id: "deal-5", property_id: "prop-5", stage: "Under contract", notes: "Verbal yes at $372k. Contract queued.", created_at: iso(6) },
-  { id: "deal-6", property_id: "prop-6", stage: "Assigned", notes: "Assigned to Summit Holdings at $444k ceiling.", created_at: iso(9) },
+  { id: "deal-1", property_id: "prop-1", stage: "Lead", assigned_buyer_id: null, notes: "Tax lien filed 2024; absentee owner out of state.", created_at: iso(1) },
+  { id: "deal-2", property_id: "prop-2", stage: "Contacted", assigned_buyer_id: null, notes: "Sent intro offer letter, awaiting reply.", created_at: iso(2) },
+  { id: "deal-3", property_id: "prop-3", stage: "Lead", assigned_buyer_id: null, notes: "Vacant, marginal spread — watch.", created_at: iso(3) },
+  { id: "deal-4", property_id: "prop-4", stage: "Contacted", assigned_buyer_id: null, notes: "Owner replied 'maybe', following up.", created_at: iso(4) },
+  { id: "deal-5", property_id: "prop-5", stage: "Under contract", assigned_buyer_id: null, notes: "Verbal yes at $372k. Contract queued.", created_at: iso(6) },
+  { id: "deal-6", property_id: "prop-6", stage: "Assigned", assigned_buyer_id: "buyer-1", notes: "Assigned to Summit Holdings at $444k ceiling.", created_at: iso(9) },
 ];
 
 export const buyers: Buyer[] = [
@@ -325,6 +325,8 @@ export const buyers: Buyer[] = [
     areas: ["Missoula", "Bozeman"],
     max_repairs: 40000,
     notes: "Cash, closes in 14 days. Prefers absentee.",
+    email: "acq@summitholdings.example.com",
+    phone: "406-555-0301",
     created_at: iso(0),
   },
   {
@@ -337,6 +339,8 @@ export const buyers: Buyer[] = [
     areas: ["Missoula"],
     max_repairs: 25000,
     notes: "Wants rent-ready or light rehab only.",
+    email: "deals@bitterrootrentals.example.com",
+    phone: "406-555-0302",
     created_at: iso(0),
   },
   {
@@ -349,6 +353,8 @@ export const buyers: Buyer[] = [
     areas: ["Bozeman"],
     max_repairs: 60000,
     notes: "Bozeman only, larger projects OK.",
+    email: "buy@gallatincapital.example.com",
+    phone: "406-555-0303",
     created_at: iso(0),
   },
 ];
@@ -365,6 +371,7 @@ export const contracts: Contract[] = [
     id: "ctr-1",
     property_id: "prop-5",
     owner_id: "own-5",
+    buyer_id: null,
     offer_price: 372000,
     pdf_url: null,
     status: "queued",
@@ -374,6 +381,7 @@ export const contracts: Contract[] = [
     id: "ctr-2",
     property_id: "prop-6",
     owner_id: "own-6",
+    buyer_id: "buyer-1",
     offer_price: 430000,
     pdf_url: "https://example.com/contracts/ctr-2.pdf",
     status: "sent",

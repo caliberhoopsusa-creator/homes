@@ -11,6 +11,7 @@ import {
 import { matchScore } from "@/lib/match";
 import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
 import { SpreadBar } from "@/components/SpreadBar";
+import { AssignButton } from "@/components/AssignButton";
 import { usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,11 @@ export default async function DealDetailPage({
   // Disposition: top qualifying buyers get a 24-hr exclusive, then blast the rest.
   const dispo = buildDispoPlan(ranked);
 
+  const assignedBuyerId = deal.assigned_buyer_id;
+  const assignedBuyer = assignedBuyerId
+    ? buyers.find((b) => b.id === assignedBuyerId) ?? null
+    : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -83,6 +89,15 @@ export default async function DealDetailPage({
             ? `${property.city ?? ""}, ${property.state ?? ""} ${property.zip ?? ""}`
             : "—"}{" "}
           · Stage: {deal.stage}
+          {assignedBuyer && (
+            <>
+              {" "}
+              ·{" "}
+              <span className="font-medium text-green-700">
+                Assigned to {assignedBuyer.name}
+              </span>
+            </>
+          )}
         </p>
       </div>
 
@@ -187,7 +202,8 @@ export default async function DealDetailPage({
                 <th className="py-1 pr-4">Score</th>
                 <th className="py-1 pr-4">Tier</th>
                 <th className="py-1 pr-4">Qualifies</th>
-                <th className="py-1">Why</th>
+                <th className="py-1 pr-4">Why</th>
+                <th className="py-1">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -206,8 +222,19 @@ export default async function DealDetailPage({
                       <span className="text-slate-400">—</span>
                     )}
                   </td>
-                  <td className="py-2 text-xs text-slate-500">
+                  <td className="py-2 pr-4 text-xs text-slate-500">
                     {result.reasons.join(", ")}
+                  </td>
+                  <td className="py-2">
+                    <AssignButton
+                      dealId={deal.id}
+                      buyerId={buyer.id}
+                      assigned={assignedBuyerId === buyer.id}
+                      disabled={
+                        !result.qualifies ||
+                        (assignedBuyerId != null && assignedBuyerId !== buyer.id)
+                      }
+                    />
                   </td>
                 </tr>
               ))}

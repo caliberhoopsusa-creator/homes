@@ -75,13 +75,26 @@ export function BuyerForm({
           className={field}
         />
       </label>
-      <label className="col-span-2 text-xs text-slate-500 sm:col-span-1">
+      <label className="col-span-2 text-xs text-slate-500 sm:col-span-2">
         Areas (comma-sep)
         <input
           name="areas"
           defaultValue={(buyer?.areas ?? []).join(", ")}
           className={field}
         />
+      </label>
+      <label className="text-xs text-slate-500">
+        Email
+        <input
+          name="email"
+          type="email"
+          defaultValue={buyer?.email ?? ""}
+          className={field}
+        />
+      </label>
+      <label className="text-xs text-slate-500">
+        Phone
+        <input name="phone" defaultValue={buyer?.phone ?? ""} className={field} />
       </label>
       <label className="col-span-2 text-xs text-slate-500 sm:col-span-4">
         Notes
@@ -153,6 +166,10 @@ export function BuyerRow({ buyer }: { buyer: Buyer }) {
         <div className="text-xs text-slate-400">
           {(buyer.areas ?? []).join(", ") || "any area"}
           {buyer.notes ? ` · ${buyer.notes}` : ""}
+        </div>
+        <div className="text-xs text-slate-400">
+          {buyer.email ?? "no email"}
+          {buyer.phone ? ` · ${buyer.phone}` : ""}
         </div>
       </div>
       <button

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import type { BuyerInsert, DealStage } from "@parcel/types";
 import {
   advanceContract,
+  assignDealToBuyer,
   createBuyer,
   deleteBuyer,
   setDealStage,
@@ -37,6 +38,8 @@ function parseBuyerForm(form: FormData): BuyerInsert {
     areas: areas.length ? areas : null,
     max_repairs: num("max_repairs"),
     notes: (form.get("notes") as string) || null,
+    email: (form.get("email") as string) || null,
+    phone: (form.get("phone") as string) || null,
   };
 }
 
@@ -57,6 +60,14 @@ export async function deleteBuyerAction(id: string) {
 
 export async function advanceContractAction(id: string) {
   await advanceContract(id);
+  revalidatePath("/contracts");
+  revalidatePath("/dashboard");
+}
+
+export async function assignDealAction(dealId: string, buyerId: string) {
+  await assignDealToBuyer(dealId, buyerId);
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/");
   revalidatePath("/contracts");
   revalidatePath("/dashboard");
 }

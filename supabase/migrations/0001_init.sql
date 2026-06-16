@@ -82,6 +82,7 @@ create table if not exists contracts (
   id uuid primary key default gen_random_uuid(),
   property_id uuid references properties(id),
   owner_id uuid references owners(id),
+  buyer_id uuid,                        -- FK added after buyers (created later)
   offer_price numeric,
   pdf_url text,
   status text default 'queued',         -- queued|approved|sent|signed|void
@@ -102,6 +103,7 @@ create table if not exists deals (
   id uuid primary key default gen_random_uuid(),
   property_id uuid references properties(id),
   stage text default 'Lead',            -- Lead|Contacted|Under contract|Assigned|Closed
+  assigned_buyer_id uuid,               -- the disposition winner; FK added after buyers
   notes text, created_at timestamptz default now()
 );
 create table if not exists buyers (
@@ -117,6 +119,20 @@ create table if not exists matches (
   score int, qualifies boolean,
   primary key (deal_id, buyer_id)
 );
+
+-- deals.assigned_buyer_id / contracts.buyer_id reference buyers, which is created
+-- after those tables — add the FKs now that buyers exists (guarded for re-runs).
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'deals_assigned_buyer_fk') then
+    alter table deals add constraint deals_assigned_buyer_fk
+      foreign key (assigned_buyer_id) references buyers(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_buyer_fk') then
+    alter table contracts add constraint contracts_buyer_fk
+      foreign key (buyer_id) references buyers(id);
+  end if;
+end $$;
 
 -- ── helpful indexes ──────────────────────────────────────────────────────────
 create index if not exists idx_owners_property on owners(property_id);

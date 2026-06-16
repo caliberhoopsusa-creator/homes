@@ -16,6 +16,7 @@ import type {
   Underwrite,
 } from "@parcel/types";
 import { getSupabase, isLive } from "./supabase";
+import { computeMatchRows } from "./match";
 import * as fx from "./fixtures";
 
 // Mutable in-memory copies so fixture writes persist for the process lifetime.
@@ -136,6 +137,8 @@ export async function createBuyer(input: BuyerInsert): Promise<Buyer> {
     areas: input.areas ?? null,
     max_repairs: input.max_repairs ?? null,
     notes: input.notes ?? null,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
     created_at: input.created_at ?? new Date().toISOString(),
   };
   if (!sb) {
@@ -195,6 +198,88 @@ export async function advanceContract(id: string): Promise<ContractStatus | null
   if (!next) return current;
   await sb.from("contracts").update({ status: next }).eq("id", id);
   return next;
+}
+
+// Recompute matchScore for every buyer against this deal and persist the snapshot
+// to the `matches` table (was read-only before). Score is stored 0–100 (int column).
+export async function upsertMatchesForDeal(dealId: string): Promise<void> {
+  const deal = await getDeal(dealId);
+  if (!deal?.property_id) return;
+  const [property, uw, buyers] = await Promise.all([
+    getProperty(deal.property_id),
+    getUnderwriteForProperty(deal.property_id),
+    getBuyers(),
+  ]);
+  if (!property) return;
+
+  const rows: Match[] = computeMatchRows(
+    {
+      property: { beds: property.beds, city: property.city, state: property.state },
+      price: uw?.buyer_ceiling ?? 0,
+      repairs: uw?.repairs ?? 0,
+    },
+    buyers,
+  ).map((r) => ({
+    deal_id: dealId,
+    buyer_id: r.buyer_id,
+    score: r.score,
+    qualifies: r.qualifies,
+  }));
+
+  const sb = getSupabase();
+  if (!sb) {
+    mem.matches = mem.matches.filter((m) => m.deal_id !== dealId).concat(rows);
+    return;
+  }
+  await sb.from("matches").upsert(rows, { onConflict: "deal_id,buyer_id" });
+}
+
+// Assign a deal to a buyer: persist the match snapshot, advance the deal to
+// "Under contract", and create a QUEUED contract for that buyer (offer = your_mao).
+// The contract still needs the human Approve & send in the Contracts queue.
+export async function assignDealToBuyer(
+  dealId: string,
+  buyerId: string,
+): Promise<void> {
+  const deal = await getDeal(dealId);
+  if (!deal?.property_id) return;
+  const [owner, uw] = await Promise.all([
+    getOwnerForProperty(deal.property_id),
+    getUnderwriteForProperty(deal.property_id),
+  ]);
+  await upsertMatchesForDeal(dealId);
+  const offer = uw?.your_mao ?? null;
+
+  const sb = getSupabase();
+  if (!sb) {
+    const d = mem.deals.find((x) => x.id === dealId);
+    if (d) {
+      d.assigned_buyer_id = buyerId;
+      d.stage = "Under contract";
+    }
+    mem.contracts.push({
+      id: newId("ctr"),
+      property_id: deal.property_id,
+      owner_id: owner?.id ?? null,
+      buyer_id: buyerId,
+      offer_price: offer,
+      pdf_url: null,
+      status: "queued",
+      created_at: new Date().toISOString(),
+    });
+    return;
+  }
+  await sb
+    .from("deals")
+    .update({ assigned_buyer_id: buyerId, stage: "Under contract" })
+    .eq("id", dealId);
+  await sb.from("contracts").insert({
+    property_id: deal.property_id,
+    owner_id: owner?.id ?? null,
+    buyer_id: buyerId,
+    offer_price: offer,
+    status: "queued",
+  });
 }
 
 export { isLive };

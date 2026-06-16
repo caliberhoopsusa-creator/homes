@@ -127,6 +127,7 @@ export interface Contract {
   id: string;
   property_id: string | null;
   owner_id: string | null;
+  buyer_id: string | null;
   offer_price: number | null;
   pdf_url: string | null;
   status: ContractStatus;
@@ -145,6 +146,8 @@ export interface Deal {
   property_id: string | null;
   stage: DealStage;
   notes: string | null;
+  /** The buyer this deal was assigned to (the disposition winner), if any. */
+  assigned_buyer_id: string | null;
   created_at: string;
 }
 
@@ -158,6 +161,8 @@ export interface Buyer {
   areas: string[] | null;
   max_repairs: number | null;
   notes: string | null;
+  email: string | null;
+  phone: string | null;
   created_at: string;
 }
 
@@ -182,9 +187,9 @@ export type MessageInsert = Omit<Message, "id" | "created_at"> &
   Partial<Pick<Message, "id" | "created_at">>;
 export type ReplyInsert = Omit<Reply, "id" | "created_at"> &
   Partial<Pick<Reply, "id" | "created_at">>;
-export type ContractInsert = Omit<Contract, "id" | "created_at" | "status"> &
-  Partial<Pick<Contract, "id" | "created_at" | "status">>;
-export type BuyerInsert = Omit<Buyer, "id" | "created_at"> &
-  Partial<Pick<Buyer, "id" | "created_at">>;
-export type DealInsert = Omit<Deal, "id" | "created_at" | "stage"> &
-  Partial<Pick<Deal, "id" | "created_at" | "stage">>;
+export type ContractInsert = Omit<Contract, "id" | "created_at" | "status" | "buyer_id"> &
+  Partial<Pick<Contract, "id" | "created_at" | "status" | "buyer_id">>;
+export type BuyerInsert = Omit<Buyer, "id" | "created_at" | "email" | "phone"> &
+  Partial<Pick<Buyer, "id" | "created_at" | "email" | "phone">>;
+export type DealInsert = Omit<Deal, "id" | "created_at" | "stage" | "assigned_buyer_id"> &
+  Partial<Pick<Deal, "id" | "created_at" | "stage" | "assigned_buyer_id">>;
