@@ -4,8 +4,9 @@
 import type { SkipTraceProvider } from "./provider.js";
 import { MockProvider } from "./providers/mock.js";
 import { BatchDataProvider } from "./providers/batchdata.js";
+import { FirecrawlProvider } from "./providers/firecrawl.js";
 
-export type ProviderName = "mock" | "batchdata";
+export type ProviderName = "mock" | "batchdata" | "firecrawl";
 
 export interface FactoryOptions {
   /** Override the env selection. */
@@ -20,11 +21,13 @@ export function createProvider(opts: FactoryOptions = {}): SkipTraceProvider {
   switch (name) {
     case "batchdata":
       return new BatchDataProvider();
+    case "firecrawl":
+      return new FirecrawlProvider();
     case "mock":
       return new MockProvider();
     default:
       throw new Error(
-        `Unknown PROPERTY_PROVIDER "${name}" (expected "mock" or "batchdata")`,
+        `Unknown PROPERTY_PROVIDER "${name}" (expected "mock", "batchdata", or "firecrawl")`,
       );
   }
 }
