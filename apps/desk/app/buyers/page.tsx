@@ -1,6 +1,7 @@
 import { getBuyers } from "@/lib/data";
 import { BuyerForm, BuyerRow } from "@/components/BuyerForm";
 import { ImportBuyers } from "@/components/ImportBuyers";
+import { FindBuyersButton } from "@/components/FindBuyersButton";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,10 @@ export default async function BuyersPage() {
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-700">Add buyer</h2>
-          <ImportBuyers />
+          <div className="flex items-center gap-2">
+            <FindBuyersButton />
+            <ImportBuyers />
+          </div>
         </div>
         <BuyerForm />
       </section>
