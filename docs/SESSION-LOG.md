@@ -25,8 +25,8 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **80 tests pass** (underwriting 15, sourcing 17,
-  skiptrace 12, outreach 22, intake 14); the Next.js desk builds.
+- **8 workspace projects** typecheck clean; **110 tests pass** (underwriting 15, sourcing 32,
+  skiptrace 12, outreach 22, intake 15, desk 14); the Next.js desk builds. Live DB = `homes`.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
 - **Domain knowledge:** `docs/RESEARCH-wholesaling.md` is the pro playbook (deep research). Build-affecting
@@ -42,7 +42,7 @@ interfaces + provision Supabase.
 Automated wholesale real-estate acquisition engine. Source distressed properties in a
 radius → underwrite (70% rule) → compliant email outreach → classify replies →
 **gated** contract generation → warm leads land in an operator "desk".
-**Money model:** the assignment-fee spread. **Goal:** ~$10k/month ≈ one $12k assignment/month.
+**Money model:** the assignment-fee spread. **Goal:** ~$10k/month ≈ one $10k assignment/month.
 
 ---
 
