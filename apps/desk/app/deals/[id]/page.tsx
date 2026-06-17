@@ -4,6 +4,7 @@ import { underwrite } from "@parcel/underwriting";
 import {
   getBuyers,
   getClosingTasks,
+  getContracts,
   getDeal,
   getMatchesForDeal,
   getOwnerForProperty,
@@ -12,10 +13,12 @@ import {
 } from "@/lib/data";
 import { matchScore } from "@/lib/match";
 import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
+import { computeNextAction } from "@/lib/next-action";
 import { SpreadBar } from "@/components/SpreadBar";
 import { AssignButton } from "@/components/AssignButton";
 import { DispatchButtons } from "@/components/DispatchButtons";
 import { ClosingChecklist } from "@/components/ClosingChecklist";
+import { NextMoveCard } from "@/components/NextMoveCard";
 import { updateClosingInfoAction } from "@/app/actions";
 import { getDealActivity } from "@/lib/activity";
 import { usd } from "@/lib/format";
@@ -34,13 +37,22 @@ export default async function DealDetailPage({
   const property = deal.property_id
     ? await getProperty(deal.property_id)
     : null;
-  const [owner, uwRow, buyers, persistedMatches, closingTasks] = await Promise.all([
-    property ? getOwnerForProperty(property.id) : Promise.resolve(null),
-    property ? getUnderwriteForProperty(property.id) : Promise.resolve(null),
-    getBuyers(),
-    getMatchesForDeal(id),
-    getClosingTasks(id),
-  ]);
+  const [owner, uwRow, buyers, persistedMatches, closingTasks, allContracts] =
+    await Promise.all([
+      property ? getOwnerForProperty(property.id) : Promise.resolve(null),
+      property ? getUnderwriteForProperty(property.id) : Promise.resolve(null),
+      getBuyers(),
+      getMatchesForDeal(id),
+      getClosingTasks(id),
+      getContracts(),
+    ]);
+
+  // Latest contract for this deal's property (drives the "next step" coaching).
+  const latestContract = property
+    ? allContracts
+        .filter((c) => c.property_id === property.id)
+        .sort((a, b) => (a.created_at > b.created_at ? -1 : 1))[0] ?? null
+    : null;
   // buyer_id → dispatch time, so we can show which buyers this deal was sent to.
   const sentByBuyer = new Map(persistedMatches.map((m) => [m.buyer_id, m.sent_at]));
   const activity = await getDealActivity(id);
@@ -86,6 +98,15 @@ export default async function DealDetailPage({
     ? buyers.find((b) => b.id === assignedBuyerId) ?? null
     : null;
 
+  // Plain-English "what to do next" for this deal.
+  const nextAction = computeNextAction({
+    stage: deal.stage,
+    verdict: uwRow?.verdict ?? null,
+    contractStatus: latestContract?.status ?? null,
+    assigned: assignedBuyerId != null,
+  });
+  const bannerHref = nextAction.target === "/contracts" ? "/contracts" : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -111,6 +132,13 @@ export default async function DealDetailPage({
           )}
         </p>
       </div>
+
+      {/* what to do next on this deal */}
+      <NextMoveCard
+        action={nextAction}
+        href={bannerHref}
+        profit={uwRow?.fee_potential ?? null}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* property facts */}

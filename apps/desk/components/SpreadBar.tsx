@@ -37,8 +37,8 @@ export function SpreadBar({
         >
           {VERDICT_LABEL[r.verdict]}
         </span>
-        <span>
-          Fee potential:{" "}
+        <span title="What you'd pocket on this deal (the assignment fee)">
+          Your estimated profit:{" "}
           <strong
             className={r.feePotential >= 0 ? "text-green-700" : "text-red-700"}
           >
@@ -46,7 +46,8 @@ export function SpreadBar({
           </strong>
         </span>
         <span className="text-slate-500">
-          Buyer ceiling {usd(r.buyerCeiling)} · Your MAO {usd(r.yourMao)}
+          Most a buyer pays {usd(r.buyerCeiling)} · Most you should pay{" "}
+          {usd(r.yourMao)}
         </span>
       </div>
 
@@ -72,10 +73,10 @@ export function SpreadBar({
       </div>
 
       <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs text-slate-600 sm:grid-cols-4">
-        <Fact label="ARV" value={usd(r.arv)} />
-        <Fact label="Repairs" value={usd(r.repairs)} />
-        <Fact label="Asking" value={usd(r.asking)} />
-        <Fact label={`Rule ${Math.round(r.rulePct * 100)}%`} value={`fee target ${usd(r.feeTarget)}`} />
+        <Fact label="Fixed-up value (ARV)" value={usd(r.arv)} />
+        <Fact label="Repair cost" value={usd(r.repairs)} />
+        <Fact label="Asking price" value={usd(r.asking)} />
+        <Fact label={`${Math.round(r.rulePct * 100)}% rule`} value={`fee target ${usd(r.feeTarget)}`} />
       </div>
     </div>
   );

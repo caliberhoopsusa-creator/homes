@@ -34,19 +34,19 @@ export function RadiusPullButton() {
 
   const label =
     state === "pulling"
-      ? "Pulling…"
+      ? "Finding…"
       : state === "ok"
-        ? "Pull queued ✓"
+        ? "Leads queued ✓"
         : state === "error"
-          ? "Pull failed"
-          : "Radius pull";
+          ? "Couldn't find leads"
+          : "Find leads";
 
   return (
     <button
       onClick={pull}
       disabled={state === "pulling"}
-      className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60"
-      title="Source new distressed properties near Missoula, MT"
+      className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:opacity-60"
+      title="Find new distressed properties to work (near Missoula, MT). Parcel skip-traces owners and underwrites the numbers for you."
     >
       {label}
     </button>

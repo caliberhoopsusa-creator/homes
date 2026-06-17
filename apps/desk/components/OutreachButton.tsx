@@ -36,17 +36,17 @@ export function OutreachButton() {
     state === "running"
       ? "Sending…"
       : state === "ok"
-        ? (msg ?? "Done ✓")
+        ? (msg ?? "Sent ✓")
         : state === "error"
-          ? "Outreach failed"
-          : "Run outreach";
+          ? "Email failed"
+          : "Email owners";
 
   return (
     <button
       onClick={run}
       disabled={state === "running"}
-      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-      title="Email the owners of clearing leads (3-touch sequence, suppression-aware)"
+      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:opacity-60"
+      title="Email owners of worth-working leads an offer to buy (6-touch sequence, CAN-SPAM safe, never contacts opt-outs)"
     >
       {label}
     </button>
