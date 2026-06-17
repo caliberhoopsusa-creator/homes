@@ -14,6 +14,7 @@ import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
 import { SpreadBar } from "@/components/SpreadBar";
 import { AssignButton } from "@/components/AssignButton";
 import { DispatchButtons } from "@/components/DispatchButtons";
+import { getDealActivity } from "@/lib/activity";
 import { usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ export default async function DealDetailPage({
   ]);
   // buyer_id → dispatch time, so we can show which buyers this deal was sent to.
   const sentByBuyer = new Map(persistedMatches.map((m) => [m.buyer_id, m.sent_at]));
+  const activity = await getDealActivity(id);
 
   // Re-run the canonical engine for the spread bar so the desk's math is
   // always the engine's math. ARV/repairs come from the stored underwrite;
@@ -254,6 +256,24 @@ export default async function DealDetailPage({
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* activity timeline */}
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">Activity</h2>
+        <ol className="space-y-1.5 text-sm">
+          {activity.length === 0 && (
+            <li className="text-slate-400">No activity yet.</li>
+          )}
+          {activity.map((e, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="w-24 shrink-0 text-xs text-slate-400">
+                {e.at ? new Date(e.at).toLocaleDateString() : "—"}
+              </span>
+              <span className="text-slate-700">{e.label}</span>
+            </li>
+          ))}
+        </ol>
       </section>
     </div>
   );

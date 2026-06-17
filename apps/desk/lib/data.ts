@@ -17,6 +17,7 @@ import type {
 } from "@parcel/types";
 import { getSupabase, isLive } from "./supabase";
 import { computeMatchRows } from "./match";
+import { nextContractStatus, dealStageForContractStatus } from "./lifecycle";
 import * as fx from "./fixtures";
 
 // Mutable in-memory copies so fixture writes persist for the process lifetime.
@@ -179,31 +180,37 @@ export async function deleteBuyer(id: string): Promise<void> {
   await sb.from("buyers").delete().eq("id", id);
 }
 
-// The human gate: queued -> approved -> sent. NEVER skips straight to sent.
-const NEXT_CONTRACT_STATUS: Partial<Record<ContractStatus, ContractStatus>> = {
-  queued: "approved",
-  approved: "sent",
-};
-
+// The human gate: queued -> approved -> sent -> signed. NEVER skips. As the
+// contract advances, the deal's stage follows (sent -> Assigned, signed -> Closed).
 export async function advanceContract(id: string): Promise<ContractStatus | null> {
   const sb = getSupabase();
   if (!sb) {
     const c = mem.contracts.find((x) => x.id === id);
     if (!c) return null;
-    const next = NEXT_CONTRACT_STATUS[c.status];
-    if (next) c.status = next;
-    return c.status;
+    const next = nextContractStatus(c.status);
+    if (!next) return c.status;
+    c.status = next;
+    const stage = dealStageForContractStatus(next);
+    if (stage && c.property_id) {
+      const d = mem.deals.find((x) => x.property_id === c.property_id);
+      if (d) d.stage = stage;
+    }
+    return next;
   }
   const { data } = await sb
     .from("contracts")
-    .select("status")
+    .select("status, property_id")
     .eq("id", id)
     .single();
-  const current = (data as { status: ContractStatus } | null)?.status;
-  if (!current) return null;
-  const next = NEXT_CONTRACT_STATUS[current];
-  if (!next) return current;
+  const cur = data as { status: ContractStatus; property_id: string | null } | null;
+  if (!cur) return null;
+  const next = nextContractStatus(cur.status);
+  if (!next) return cur.status;
   await sb.from("contracts").update({ status: next }).eq("id", id);
+  const stage = dealStageForContractStatus(next);
+  if (stage && cur.property_id) {
+    await sb.from("deals").update({ stage }).eq("property_id", cur.property_id);
+  }
   return next;
 }
 

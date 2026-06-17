@@ -292,7 +292,8 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   (3-touch, suppression + CAN-SPAM, mock provider until SendGrid) + a header **Run outreach** button.
   Gets/creates a default campaign. The top of the in-app loop is now operable (Pull → Outreach → reply
   webhook → contract). 202s until the service-role key is set.
-- Verified: 8/8 typecheck, **107 tests**, desk builds.
+- Deal-lifecycle polish: contract auto-advances the deal stage (sent->Assigned, signed->Closed) + a Mark-signed step; per-deal Activity timeline (derived from existing rows).
+- Verified: 8/8 typecheck, **110 tests**, desk builds.
 
 ### Session 6 — 2026-06-16 (CI fix + buyer/deal engine Phase A)
 - **CI fix:** the workflow failed in ~4s — `pnpm/action-setup@v4` had `version: 10` AND package.json

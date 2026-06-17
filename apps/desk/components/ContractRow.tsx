@@ -9,6 +9,7 @@ import { usd } from "@/lib/format";
 const ACTION_LABEL: Partial<Record<ContractStatus, string>> = {
   queued: "Approve & send",
   approved: "Confirm send",
+  sent: "Mark signed",
 };
 
 const STATUS_CLASS: Record<ContractStatus, string> = {
