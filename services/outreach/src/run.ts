@@ -53,7 +53,7 @@ export interface OutreachDeps {
 
 export interface RunCampaignOptions {
   campaign: Campaign;
-  /** Which touch to send this run (1 | 2 | 3). Defaults to 1. */
+  /** Which touch to send this run (1–6). Defaults to 1. */
   step?: number;
   /**
    * Ramp factor in [0,1] applied to the campaign daily_cap to warm the domain.
@@ -139,6 +139,7 @@ export async function runCampaign(
       owner_id: owner.id,
       step: built.step,
       direction: "outbound",
+      kind: "seller_outreach",
       subject: built.subject,
       body: built.body,
       status: "queued",

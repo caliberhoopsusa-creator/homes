@@ -14,7 +14,18 @@ export interface UnderwriteParams {
   rulePct?: number;
   /** Assignment fee we want to clear. Default $10,000 (research-backed planning number). */
   feeTarget?: number;
+  // ── Itemized-MAO inputs (Max Maxwell's full formula). Passing `buyerProfitPct`
+  //    switches the engine from the 70% shortcut to the itemized model, where the
+  //    buyer ceiling is ARV minus every cost the buyer carries. ──
+  /** Buyer's holding cost over the rehab (taxes/insurance/utilities/financing). */
+  holdingCosts?: number;
+  /** Buyer's closing costs (both legs). */
+  closingCosts?: number;
+  /** Buyer's required profit as a fraction of ARV (his 0.15–0.20). Presence ⇒ itemized mode. */
+  buyerProfitPct?: number;
 }
+
+export type UnderwriteMode = "rule70" | "itemized";
 
 export interface UnderwriteResult {
   arv: number;
@@ -22,7 +33,9 @@ export interface UnderwriteResult {
   asking: number;
   rulePct: number;
   feeTarget: number;
-  /** What an end buyer can pay and still hit the rule: arv*rulePct - repairs. */
+  /** Which formula produced the buyer ceiling. */
+  mode: UnderwriteMode;
+  /** What an end buyer can pay: rule70 → arv*rulePct - repairs; itemized → arv - repairs - holding - closing - arv*buyerProfitPct. */
   buyerCeiling: number;
   /** Our maximum allowable offer: buyerCeiling - feeTarget. */
   yourMao: number;
@@ -50,9 +63,20 @@ export function underwrite(params: UnderwriteParams): UnderwriteResult {
     asking,
     rulePct = DEFAULT_RULE_PCT,
     feeTarget = DEFAULT_FEE_TARGET,
+    holdingCosts = 0,
+    closingCosts = 0,
+    buyerProfitPct,
   } = params;
 
-  const buyerCeiling = arv * rulePct - repairs;
+  // Itemized mode is opt-in via buyerProfitPct; otherwise the canonical 70% rule.
+  const mode: UnderwriteMode =
+    buyerProfitPct !== undefined ? "itemized" : "rule70";
+
+  const buyerCeiling =
+    mode === "itemized"
+      ? arv - repairs - holdingCosts - closingCosts - arv * (buyerProfitPct as number)
+      : arv * rulePct - repairs;
+
   const yourMao = buyerCeiling - feeTarget;
   const feePotential = buyerCeiling - asking;
 
@@ -67,6 +91,7 @@ export function underwrite(params: UnderwriteParams): UnderwriteResult {
     asking,
     rulePct,
     feeTarget,
+    mode,
     buyerCeiling,
     yourMao,
     feePotential,

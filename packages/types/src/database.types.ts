@@ -17,6 +17,8 @@ export type DistressSignal =
   | "vacant"
   | "absentee";
 export type MessageDirection = "outbound" | "inbound";
+/** Seller follow-up sequence vs buyer-disposition blast — both CAN-SPAM-governed. */
+export type MessageKind = "seller_outreach" | "buyer_dispo";
 export type MessageStatus =
   | "queued"
   | "sent"
@@ -39,6 +41,14 @@ export type DealStage =
   | "Under contract"
   | "Assigned"
   | "Closed";
+/** Max's 5-phase closing "quarterback" timeline. */
+export type ClosingPhase =
+  | "contract_to_assignment"
+  | "buyer_selection"
+  | "due_diligence"
+  | "closing_prep"
+  | "closing_day";
+export type ClosingTaskStatus = "pending" | "done";
 
 // ── row shapes (what you read back) ──────────────────────────────────────────
 export interface Property {
@@ -86,6 +96,15 @@ export interface Underwrite {
   is_estimate: boolean;
   verdict: Verdict | null;
   created_at: string;
+  // ── itemized-MAO inputs (null → engine uses the 70% rule) ──
+  /** Buyer's holding cost (taxes/insurance/utilities/financing over the rehab). */
+  holding_costs?: number | null;
+  /** Buyer's closing costs (both legs). */
+  closing_costs?: number | null;
+  /** Buyer's required profit as a fraction of ARV (Max's 0.15–0.20). */
+  buyer_profit_pct?: number | null;
+  /** How many real sold-comps backed the ARV (0/undefined = heuristic estimate). */
+  comp_count?: number | null;
 }
 
 export interface Campaign {
@@ -109,6 +128,8 @@ export interface Message {
   provider_id: string | null;
   sent_at: string | null;
   created_at: string;
+  /** Seller outreach vs buyer-disposition blast (default 'seller_outreach'). */
+  kind?: MessageKind;
 }
 
 export interface Reply {
@@ -149,6 +170,10 @@ export interface Deal {
   /** The buyer this deal was assigned to (the disposition winner), if any. */
   assigned_buyer_id: string | null;
   created_at: string;
+  /** Closing coordination: the title company / closing attorney handling escrow. */
+  title_company?: string | null;
+  /** Target/actual closing date (ISO date). */
+  closing_date?: string | null;
 }
 
 export interface Buyer {
@@ -175,6 +200,19 @@ export interface Match {
   sent_at: string | null;
 }
 
+export interface ClosingTask {
+  id: string;
+  deal_id: string | null;
+  phase: ClosingPhase;
+  label: string;
+  status: ClosingTaskStatus;
+  /** Order within a phase. */
+  sort: number;
+  due_at: string | null;
+  done_at: string | null;
+  created_at: string;
+}
+
 // ── insert shapes (db-defaulted columns optional) ────────────────────────────
 export type PropertyInsert = Omit<Property, "id" | "created_at"> &
   Partial<Pick<Property, "id" | "created_at">>;
@@ -195,3 +233,5 @@ export type BuyerInsert = Omit<Buyer, "id" | "created_at" | "email" | "phone"> &
   Partial<Pick<Buyer, "id" | "created_at" | "email" | "phone">>;
 export type DealInsert = Omit<Deal, "id" | "created_at" | "stage" | "assigned_buyer_id"> &
   Partial<Pick<Deal, "id" | "created_at" | "stage" | "assigned_buyer_id">>;
+export type ClosingTaskInsert = Omit<ClosingTask, "id" | "created_at" | "status" | "sort"> &
+  Partial<Pick<ClosingTask, "id" | "created_at" | "status" | "sort">>;

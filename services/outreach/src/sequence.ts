@@ -1,6 +1,7 @@
-// The 3-touch sequence (PRD §6.4). Exactly 3 touches at day 0 / 3 / 7, ONE CTA
-// each. Touch 1 is plain-text-feel: NO images, NO links (the unsubscribe footer
-// is required by law and is the only link, kept as plain text on touch 1).
+// The 6-touch sequence (PRD §6.4, extended per docs/AUTOMATION-PLAN.md to mirror
+// Max Maxwell's 30-day seller follow-up). Six touches at day 0 / 3 / 7 / 14 / 21 /
+// 30, ONE CTA each. Touch 1 is plain-text-feel: NO images, NO links (the
+// unsubscribe footer is required by law and is the only link, kept plain on touch 1).
 //
 // MT broker line (CLAUDE.md #4): we market AN OFFER TO BUY, never the property
 // FOR SALE. Subjects/bodies are truthful and reference only real tokens.
@@ -56,6 +57,49 @@ export const SEQUENCE: readonly SequenceStep[] = [
   {
     step: 3,
     dayOffset: 7,
+    plainTextOnly: false,
+    subject: "Comparable sales near {{address}}",
+    body: [
+      "Hi,",
+      "",
+      "Following up on {{address}} in {{neighborhood}}. I base my offers on",
+      "recent comparable sales nearby, and I'm happy to walk you through how",
+      "I'd arrive at a number for your place.",
+      "",
+      "Reply here and I'll put an offer together.",
+    ].join("\n"),
+  },
+  {
+    step: 4,
+    dayOffset: 14,
+    plainTextOnly: false,
+    subject: "Still able to make a cash offer on {{address}}",
+    body: [
+      "Hi,",
+      "",
+      "Checking back on {{address}}. My offer to buy still stands — cash, no",
+      "fees or listing, and you choose the closing date.",
+      "",
+      "If the timing is better now, just reply and I'll send a number.",
+    ].join("\n"),
+  },
+  {
+    step: 5,
+    dayOffset: 21,
+    plainTextOnly: false,
+    subject: "Anything I can answer about selling {{address}}?",
+    body: [
+      "Hi,",
+      "",
+      "If you've been weighing a sale of {{address}}, I'm glad to answer any",
+      "questions about how a cash purchase works and what I could offer.",
+      "",
+      "Reply here whenever it's useful.",
+    ].join("\n"),
+  },
+  {
+    step: 6,
+    dayOffset: 30,
     plainTextOnly: false,
     subject: "Last note on {{address}}",
     body: [

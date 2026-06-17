@@ -10,8 +10,11 @@ import {
   createBuyer,
   deleteBuyer,
   dispatchToBuyers,
+  seedClosingTasks,
+  setClosingTaskStatus,
   setDealStage,
   updateBuyer,
+  updateDealClosing,
 } from "@/lib/data";
 import {
   inferBuyersFromCashSales,
@@ -86,6 +89,29 @@ export async function dispatchDealAction(
   const count = await dispatchToBuyers(dealId, tier);
   revalidatePath(`/deals/${dealId}`);
   return count;
+}
+
+// ── closing coordinator ────────────────────────────────────────────────────
+export async function seedClosingAction(dealId: string) {
+  await seedClosingTasks(dealId);
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function toggleClosingTaskAction(
+  taskId: string,
+  dealId: string,
+  done: boolean,
+) {
+  await setClosingTaskStatus(taskId, done ? "done" : "pending");
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function updateClosingInfoAction(dealId: string, form: FormData) {
+  await updateDealClosing(dealId, {
+    title_company: (form.get("title_company") as string) || null,
+    closing_date: (form.get("closing_date") as string) || null,
+  });
+  revalidatePath(`/deals/${dealId}`);
 }
 
 // Import cash-buyer buy-boxes from pasted county cash-closing records (JSON

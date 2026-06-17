@@ -8,7 +8,7 @@ import {
   createProvider as createSkiptraceProvider,
   runSkiptrace,
 } from "@parcel/skiptrace";
-import { runUnderwriting } from "@parcel/underwriting";
+import { runUnderwriting, MockCompsProvider } from "@parcel/underwriting";
 import {
   createServiceClient,
   SourcingDbStore,
@@ -62,7 +62,11 @@ export async function POST(req: Request) {
       createSkiptraceProvider(),
       new SkiptraceDbStore(db),
     );
-    const underwritten = await runUnderwriting(new UnderwriteDbStore(db));
+    // Comps-backed ARV (Max's method) via the deterministic mock provider until a
+    // real sold-comps source is wired (docs/AUTOMATION-PLAN.md).
+    const underwritten = await runUnderwriting(new UnderwriteDbStore(db), {
+      compsProvider: new MockCompsProvider(),
+    });
 
     return NextResponse.json({
       accepted: true,

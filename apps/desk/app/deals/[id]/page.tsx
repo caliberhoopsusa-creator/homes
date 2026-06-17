@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { underwrite } from "@parcel/underwriting";
 import {
   getBuyers,
+  getClosingTasks,
   getDeal,
   getMatchesForDeal,
   getOwnerForProperty,
@@ -14,6 +15,8 @@ import { buildDispoPlan, type DispoTier } from "@/lib/dispo";
 import { SpreadBar } from "@/components/SpreadBar";
 import { AssignButton } from "@/components/AssignButton";
 import { DispatchButtons } from "@/components/DispatchButtons";
+import { ClosingChecklist } from "@/components/ClosingChecklist";
+import { updateClosingInfoAction } from "@/app/actions";
 import { getDealActivity } from "@/lib/activity";
 import { usd } from "@/lib/format";
 
@@ -31,11 +34,12 @@ export default async function DealDetailPage({
   const property = deal.property_id
     ? await getProperty(deal.property_id)
     : null;
-  const [owner, uwRow, buyers, persistedMatches] = await Promise.all([
+  const [owner, uwRow, buyers, persistedMatches, closingTasks] = await Promise.all([
     property ? getOwnerForProperty(property.id) : Promise.resolve(null),
     property ? getUnderwriteForProperty(property.id) : Promise.resolve(null),
     getBuyers(),
     getMatchesForDeal(id),
+    getClosingTasks(id),
   ]);
   // buyer_id → dispatch time, so we can show which buyers this deal was sent to.
   const sentByBuyer = new Map(persistedMatches.map((m) => [m.buyer_id, m.sent_at]));
@@ -205,6 +209,19 @@ export default async function DealDetailPage({
           exclusiveCount={dispo.exclusive.length}
           blastCount={dispo.blast.length}
         />
+        <p className="mb-3 text-xs">
+          <a
+            href={`/api/deals/${deal.id}/package`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-700 underline hover:text-slate-900"
+          >
+            View deal package (PDF)
+          </a>{" "}
+          <span className="text-slate-400">
+            — the buyer-facing CMA sent on dispatch
+          </span>
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -256,6 +273,43 @@ export default async function DealDetailPage({
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* closing coordinator */}
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-700">
+            Closing coordinator{" "}
+            <span className="text-xs font-normal text-slate-400">
+              (quarterback the deal to close)
+            </span>
+          </h2>
+          <form
+            action={updateClosingInfoAction.bind(null, deal.id)}
+            className="flex flex-wrap items-center gap-2 text-xs"
+          >
+            <input
+              type="text"
+              name="title_company"
+              defaultValue={deal.title_company ?? ""}
+              placeholder="Title company / attorney"
+              className="rounded border border-slate-300 px-2 py-1"
+            />
+            <input
+              type="date"
+              name="closing_date"
+              defaultValue={deal.closing_date ?? ""}
+              className="rounded border border-slate-300 px-2 py-1"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-slate-100 px-2.5 py-1 font-medium text-slate-700 hover:bg-slate-200"
+            >
+              Save
+            </button>
+          </form>
+        </div>
+        <ClosingChecklist dealId={deal.id} tasks={closingTasks} />
       </section>
 
       {/* activity timeline */}
