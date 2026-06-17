@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RadiusPullButton } from "./RadiusPullButton";
+import { OutreachButton } from "./OutreachButton";
 import { isLive } from "@/lib/data";
 
 const NAV = [
@@ -44,6 +45,7 @@ export function Header() {
             {live ? "live" : "fixtures"}
           </span>
           <RadiusPullButton />
+          <OutreachButton />
         </div>
       </div>
     </header>

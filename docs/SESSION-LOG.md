@@ -286,7 +286,13 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   (pure, tested) and a fetched feed `/api/county/mt-absentee-billings`. ⚠️ This sandbox's network egress
   is locked (`gisservicemt.gov` not allow-listed) so it runs where egress is allowed; `docs/COUNTY-DATA.md`
   has the one-line smoke test to confirm the situs field names.
-- Verified: 8/8 typecheck, **105 tests**, desk builds.
+- **Find buyers from the same data:** `inferBuyersFromOwnership` (multi-property owners ≥2 = investors →
+  buy-boxes; govt/banks filtered). `importBuyersAction` auto-detects ownership vs cash-sale JSON.
+- **In-app outreach control:** `/api/outreach` route runs `runCampaign` against clearing-deal owners
+  (3-touch, suppression + CAN-SPAM, mock provider until SendGrid) + a header **Run outreach** button.
+  Gets/creates a default campaign. The top of the in-app loop is now operable (Pull → Outreach → reply
+  webhook → contract). 202s until the service-role key is set.
+- Verified: 8/8 typecheck, **107 tests**, desk builds.
 
 ### Session 6 — 2026-06-16 (CI fix + buyer/deal engine Phase A)
 - **CI fix:** the workflow failed in ~4s — `pnpm/action-setup@v4` had `version: 10` AND package.json
