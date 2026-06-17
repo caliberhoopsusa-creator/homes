@@ -24,6 +24,9 @@ type Feed =
       outFields: string;
       map: ArcgisFieldMap;
       resultRecordCount?: number;
+      /** When the situs city/state/zip live in one combined field (mapped to `city`),
+       *  split it into city/state/zip (e.g. "BILLINGS, MT 59101"). */
+      splitCityStateZip?: boolean;
     };
 
 const FEEDS: Record<string, Feed> = {
@@ -47,25 +50,41 @@ TD-1003,3410 Granger Ave,Billings,MT,59102,4,312000`,
 
   // REAL source: Montana Cadastral statewide parcels (MSDI). Filters to ABSENTEE
   // owners (owner mailing state != MT) in Billings — a top distress signal.
-  // Needs network egress. Confirm the situs/city field names via the smoke test
-  // in docs/COUNTY-DATA.md and adjust `map`/`where` if the live schema differs.
+  // Field names verified live (2026-06): situs is AddressLine1 + a combined
+  // CityStateZip; owner mailing fields are OwnerCity/OwnerState/OwnerZipCode.
   "mt-absentee-billings": {
     kind: "arcgis",
     layerUrl:
       "https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer/0",
-    where: "OwnerState <> 'MT' AND PropCity = 'BILLINGS'",
-    outFields: "*",
+    where: "OwnerState <> 'MT' AND CityStateZip LIKE '%BILLINGS%'",
+    outFields: "PARCELID,AddressLine1,CityStateZip,OwnerState,TotalValue",
     resultRecordCount: 200,
+    splitCityStateZip: true,
     map: {
       record_id: "PARCELID",
-      address: "PropStreetAddress",
-      city: "PropCity",
-      state: "PropState",
-      zip: "PropZipCode",
+      address: "AddressLine1",
+      city: "CityStateZip", // combined; split into city/state/zip below
       est_value: "TotalValue",
     },
   },
 };
+
+const CITY_STATE_ZIP = /^(.*?),?\s*([A-Za-z]{2})\s+(\d{5})(?:-\d{4})?$/;
+
+/** "BILLINGS, MT 59101" → { city: "Billings", state: "MT", zip: "59101" }. */
+function splitCityStateZip<T extends { city?: string | null }>(
+  records: T[],
+): T[] {
+  return records.map((r) => {
+    const m = r.city ? CITY_STATE_ZIP.exec(r.city.trim()) : null;
+    if (!m) return r;
+    const city = m[1]
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return { ...r, city, state: m[2].toUpperCase(), zip: m[3] };
+  });
+}
 
 export async function GET(
   _req: Request,
@@ -94,7 +113,9 @@ export async function GET(
     if (!res.ok) {
       return Response.json({ error: `upstream ${res.status}` }, { status: 502 });
     }
-    return Response.json(arcgisToCountyRecords(await res.json(), feed.map));
+    let records = arcgisToCountyRecords(await res.json(), feed.map);
+    if (feed.splitCityStateZip) records = splitCityStateZip(records);
+    return Response.json(records);
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "feed fetch failed" },
