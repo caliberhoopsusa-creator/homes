@@ -279,7 +279,14 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   quotes/commas + `$1,234`→number) + desk feed route `app/api/county/[slug]` + the existing
   `CountyRecordsProvider` consume it. `docs/COUNTY-DATA.md` documents wiring a real county. **Verified
   end-to-end:** the feed serves 3 normalized records (200 JSON), unknown slug → 404.
-- Verified: 8/8 typecheck, **102 tests**, desk builds.
+- **Real MT source wired (researched):** Montana runs a statewide **Cadastral ArcGIS** service
+  (`gisservicemt.gov/.../MSDI_Framework/Parcels/MapServer/0`) with owner name, **mailing city/state**,
+  assessed value, parcel id. Tax-delinquent bulk lists aren't published cleanly (treasurer PDFs/portals),
+  so we lead with **absentee** (owner mailing state ≠ MT). Built `arcgisToCountyRecords` + `arcgisQueryUrl`
+  (pure, tested) and a fetched feed `/api/county/mt-absentee-billings`. ⚠️ This sandbox's network egress
+  is locked (`gisservicemt.gov` not allow-listed) so it runs where egress is allowed; `docs/COUNTY-DATA.md`
+  has the one-line smoke test to confirm the situs field names.
+- Verified: 8/8 typecheck, **105 tests**, desk builds.
 
 ### Session 6 — 2026-06-16 (CI fix + buyer/deal engine Phase A)
 - **CI fix:** the workflow failed in ~4s — `pnpm/action-setup@v4` had `version: 10` AND package.json

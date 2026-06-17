@@ -19,17 +19,42 @@ county export (CSV)  →  csvToCountyRecords (column map)  →  normalized JSON 
 - **`services/sourcing/src/providers/county.ts`** — `CountyRecordsProvider` fetches the feed URLs in
   `COUNTY_RECORDS_SOURCES`, ToS-denylisting Zillow/Redfin/etc.
 
-## Wire a real county (config step)
-1. Get the county's list (download a CSV, or fetch a published one). Many MT counties (Yellowstone,
-   Missoula, Gallatin) post tax-delinquent / clerk records; some are PDF/portal → a one-time manual CSV export.
-2. Add a feed entry in `app/api/county/[slug]/route.ts` (or fetch the source there): paste/point at the CSV +
-   set the **column map** (which CSV headers map to address/city/zip/beds/value).
-3. Point the provider at it:
-   ```
-   PROPERTY_PROVIDER=county
-   COUNTY_RECORDS_SOURCES=[{"url":"https://<desk-host>/api/county/<slug>","distress":"tax_delinquent","jurisdiction":"Yellowstone County, MT"}]
-   ```
-4. Trigger a pull (the desk's **Pull** button → `/api/pull`). Records flow in as `properties` (source `county`).
+## Two feed kinds (`app/api/county/[slug]/route.ts`)
+- **`csv`** — a bundled/exported county CSV. Works offline. For manual exports + the demo
+  (`/api/county/yellowstone-tax-delinquent`).
+- **`arcgis`** — a live county/state GIS parcel layer (returns JSON). Needs network egress. The route
+  fetches `<layer>/query?...f=json` and normalizes via `arcgisToCountyRecords`.
 
-> County records aren't geocoded; `runPull` keeps null-coord candidates (they're already region-scoped),
-> then skip-trace + underwriting run as usual.
+## Real Montana source (wired): the statewide Cadastral
+MT runs a centralized cadastral GIS covering every county — **owner name, owner MAILING city/state,
+assessed value, parcel id** — as a queryable ArcGIS REST service. Tax-delinquent bulk lists are *not*
+published cleanly (county treasurers post PDFs/portals), so we lead with the **absentee** signal:
+**owner mailing state ≠ MT** = an out-of-area owner (a top wholesaling target).
+
+- Wired feed: **`/api/county/mt-absentee-billings`** → MSDI Parcels, `where OwnerState <> 'MT' AND PropCity = 'BILLINGS'`.
+- Endpoint: `https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer/0`
+  (mirror: `https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/MapServer/0`).
+
+### ⚠️ One-time confirm (run where egress is allowed — not this sandbox)
+The exact **situs address / city field names** are best-guesses (`PropStreetAddress`/`PropCity`/`PropState`/
+`PropZipCode`); confirmed fields are `OwnerName, OwnerCity, OwnerState, TotalValue, PARCELID`. Smoke-test:
+```
+curl -A "Mozilla/5.0" "https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer/0/query?where=1%3D1&outFields=*&resultRecordCount=2&returnGeometry=false&f=json"
+```
+Check the `fields`/`attributes`, then fix the `map`/`where` in the route if the situs columns differ.
+
+## Use it
+```
+PROPERTY_PROVIDER=county
+COUNTY_RECORDS_SOURCES=[{"url":"https://<desk-host>/api/county/mt-absentee-billings","distress":"absentee","jurisdiction":"Yellowstone County, MT"}]
+```
+Then hit the desk's **Pull** button → `/api/pull`: records flow in as `properties` (source `county`) →
+skip-trace → underwriting → pipeline.
+
+> County records aren't geocoded; `runPull` keeps null-coord candidates (already region-scoped via the
+> feed's filter), then skip-trace + underwriting run as usual.
+
+## County GIS alternatives (also fetchable)
+- **Gallatin (Bozeman):** `https://gis.gallatin.mt.gov/arcgis/rest/services/GENERAL_VIEWER/MapServer`
+- **Missoula:** `https://services8.arcgis.com/a0HR33xuh1KoWKl7/arcgis/rest/services/MISSOULA_COUNTY_DATA/FeatureServer`
+  (+ open-data hub with CSV/GeoJSON downloads: `https://missoula-county-open-data-mcgis.hub.arcgis.com/`)

@@ -8,3 +8,4 @@ export * from "./providers/mock.js";
 export * from "./providers/batchdata.js";
 export * from "./providers/county.js";
 export * from "./adapters/csv.js";
+export * from "./adapters/arcgis.js";
