@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { inferBuyersFromCashSales } from "../lib/buyers-import";
+import {
+  inferBuyersFromCashSales,
+  inferBuyersFromOwnership,
+} from "../lib/buyers-import";
 
 describe("inferBuyersFromCashSales", () => {
   it("groups a buyer's purchases into one inferred buy-box", () => {
@@ -29,5 +32,32 @@ describe("inferBuyersFromCashSales", () => {
 
   it("skips records with no usable buyer name", () => {
     expect(inferBuyersFromCashSales([{ buyer_name: "" }, { buyer_name: "  " }])).toEqual([]);
+  });
+});
+
+describe("inferBuyersFromOwnership", () => {
+  const parcels = [
+    { owner_name: "Sapphire Capital LLC", owner_city: "Denver", owner_state: "CO", property_city: "Billings", value: 240000 },
+    { owner_name: "sapphire capital llc", owner_city: "Denver", owner_state: "CO", property_city: "Laurel", value: 310000 },
+    { owner_name: "Sapphire Capital LLC", owner_city: "Denver", owner_state: "CO", property_city: "Billings", value: 180000 },
+    { owner_name: "Jane Homeowner", owner_state: "MT", property_city: "Billings", value: 290000 }, // only 1 → skipped
+    { owner_name: "City of Billings", property_city: "Billings", value: 5000000 }, // govt → skipped
+    { owner_name: "City of Billings", property_city: "Billings", value: 5000000 },
+  ];
+
+  it("turns multi-property owners into investor buy-boxes (≥2 parcels), excluding govt/banks", () => {
+    const buyers = inferBuyersFromOwnership(parcels);
+    expect(buyers).toHaveLength(1); // only Sapphire (3 parcels); Jane (1) + City (govt) excluded
+    const b = buyers[0]!;
+    expect(b.name).toBe("Sapphire Capital LLC");
+    expect(b.type).toBe("investor");
+    expect(b.areas).toEqual(["Billings", "Laurel"]);
+    expect(b.min_price).toBe(180000);
+    expect(b.max_price).toBe(310000);
+    expect(b.notes).toMatch(/Owns 3 properties in Billings, Laurel; mailing Denver, CO\./);
+  });
+
+  it("honors a custom minProperties threshold", () => {
+    expect(inferBuyersFromOwnership(parcels, { minProperties: 4 })).toEqual([]); // nobody owns 4
   });
 });

@@ -35,11 +35,11 @@ export function ImportBuyers() {
   return (
     <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="text-xs text-slate-500">
-        Paste a JSON array of cash-closing records{" "}
-        <code className="text-slate-400">
-          {`[{ "buyer_name", "city", "state", "price", "beds" }]`}
-        </code>{" "}
-        — one buy-box is inferred per buyer.
+        Paste a JSON array — cash-closings{" "}
+        <code className="text-slate-400">{`[{buyer_name, city, price, beds}]`}</code> or county
+        ownership{" "}
+        <code className="text-slate-400">{`[{owner_name, owner_state, property_city, value}]`}</code>{" "}
+        (multi-property owners → investors). One buy-box inferred per buyer.
       </p>
       <textarea
         value={text}

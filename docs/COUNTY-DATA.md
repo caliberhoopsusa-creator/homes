@@ -58,3 +58,16 @@ skip-trace → underwriting → pipeline.
 - **Gallatin (Bozeman):** `https://gis.gallatin.mt.gov/arcgis/rest/services/GENERAL_VIEWER/MapServer`
 - **Missoula:** `https://services8.arcgis.com/a0HR33xuh1KoWKl7/arcgis/rest/services/MISSOULA_COUNTY_DATA/FeatureServer`
   (+ open-data hub with CSV/GeoJSON downloads: `https://missoula-county-open-data-mcgis.hub.arcgis.com/`)
+
+## Finding buyers from the same data
+The cadastral feeds **both sides**: absentee owners are sellers; **multi-property owners are buyers**
+(investors/landlords). `inferBuyersFromOwnership` (`apps/desk/lib/buyers-import.ts`) groups parcels by
+owner; anyone holding **≥2** becomes an investor buy-box (areas they hold in, price band from their
+parcel values, mailing in notes); govt/banks/HOAs are filtered out.
+
+- Query the cadastral with owner fields, e.g.
+  `outFields=OwnerName,OwnerCity,OwnerState,PropCity,TotalValue`, transform to
+  `[{owner_name, owner_city, owner_state, property_city, value}]`, and paste into the Buyers page
+  **Import** panel (it auto-detects ownership vs cash-sale records).
+- Gold-standard buyers = recent **cash** purchasers from deed/recorder records (no mortgage lien);
+  MT publishes those via treasurer/recorder portals (manual), so layer them in later.

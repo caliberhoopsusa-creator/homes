@@ -13,7 +13,12 @@ import {
   setDealStage,
   updateBuyer,
 } from "@/lib/data";
-import { inferBuyersFromCashSales, type CashSaleRecord } from "@/lib/buyers-import";
+import {
+  inferBuyersFromCashSales,
+  inferBuyersFromOwnership,
+  type CashSaleRecord,
+  type OwnerParcel,
+} from "@/lib/buyers-import";
 
 export async function moveDealAction(id: string, stage: DealStage) {
   await setDealStage(id, stage);
@@ -89,15 +94,21 @@ export async function dispatchDealAction(
 export async function importBuyersAction(
   recordsJson: string,
 ): Promise<{ inserted: number; error?: string }> {
-  let records: CashSaleRecord[];
+  let arr: unknown[];
   try {
     const parsed = JSON.parse(recordsJson);
     if (!Array.isArray(parsed)) return { inserted: 0, error: "Expected a JSON array of records." };
-    records = parsed as CashSaleRecord[];
+    arr = parsed;
   } catch {
     return { inserted: 0, error: "Invalid JSON." };
   }
-  const buyers = inferBuyersFromCashSales(records);
+  // Auto-detect: ownership records (owner_name → multi-property investors) vs
+  // cash-sale records (buyer_name → recent cash purchasers).
+  const first = arr[0] as Record<string, unknown> | undefined;
+  const buyers =
+    first && "owner_name" in first
+      ? inferBuyersFromOwnership(arr as OwnerParcel[])
+      : inferBuyersFromCashSales(arr as CashSaleRecord[]);
   for (const b of buyers) await createBuyer(b);
   revalidatePath("/buyers");
   return { inserted: buyers.length };
