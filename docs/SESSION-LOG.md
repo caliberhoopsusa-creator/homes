@@ -7,6 +7,17 @@
 
 ---
 
+---
+
+## ⏳ PENDING OPERATOR ACTION (remind the user)
+**Go live = paste the Supabase service-role key.** The live project is **`homes`
+(`tkdeqcszgvooboskipvt`)** — schema applied + seeded (3 deals, 3 buyers); `apps/desk/.env.local`
+already points at it. The desk runs on fixtures until `SUPABASE_SERVICE_ROLE_KEY` is set
+(Dashboard → homes → Settings → API → `service_role`). Then `pnpm --filter @parcel/desk dev` → live.
+*(Older project `lrcbnmwlyhosnxhjhlxg` is unused — can be paused.)* — user said "do this later, remind me."
+
+---
+
 ## 0. TL;DR current state (as of 2026-06-16)
 
 A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
@@ -257,6 +268,18 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 - Still open / NOT free: provision Supabase (free tier) + real data-provider key (paid, or build free
   county-records ingesters) + SendGrid (free tier) + domain + **attorney-reviewed contract / MT legal check**
   (the one true hard gate). A `docs/GO-LIVE.md` checklist (free vs paid, ordered) is the next doc to write.
+
+### Session 7 — 2026-06-16 (go-live part 1: live Supabase + free county adapters)
+- **Live Supabase:** the operator created a new project **`homes` (`tkdeqcszgvooboskipvt`)** and chose
+  it. Applied the full schema + seeded (3 deals, 3 buyers) via the MCP; repointed `apps/desk/.env.local`.
+  Fixed a latent migration bug (`buyers.email/phone` were missing from the SQL). `lib/supabase.ts` now uses
+  a **server-side service-role client** (falls back to fixtures until the key is pasted — see the PENDING
+  callout at the top). The older project `lrcbnmwlyhosnxhjhlxg` is unused.
+- **Free county data path:** `services/sourcing/src/adapters/csv.ts` `csvToCountyRecords()` (pure, tested:
+  quotes/commas + `$1,234`→number) + desk feed route `app/api/county/[slug]` + the existing
+  `CountyRecordsProvider` consume it. `docs/COUNTY-DATA.md` documents wiring a real county. **Verified
+  end-to-end:** the feed serves 3 normalized records (200 JSON), unknown slug → 404.
+- Verified: 8/8 typecheck, **102 tests**, desk builds.
 
 ### Session 6 — 2026-06-16 (CI fix + buyer/deal engine Phase A)
 - **CI fix:** the workflow failed in ~4s — `pnpm/action-setup@v4` had `version: 10` AND package.json
