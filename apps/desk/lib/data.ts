@@ -15,9 +15,11 @@ import type {
   Match,
   Owner,
   Property,
+  SmsConsent,
   Underwrite,
 } from "@parcel/types";
 import { closingSeedRows } from "./closing";
+import { consentFromRows, normalizePhone } from "./sms-consent";
 import { underwrite } from "@parcel/underwriting";
 import { makeProvider, configFromEnv } from "@parcel/outreach";
 import { getSupabase, isLive } from "./supabase";
@@ -36,6 +38,7 @@ const mem = {
   matches: fx.matches.map((m) => ({ ...m })) as Match[],
   contracts: fx.contracts.map((c) => ({ ...c })) as Contract[],
   closingTasks: [] as ClosingTask[],
+  smsConsents: [] as SmsConsent[],
 };
 
 const newId = (prefix: string) =>
@@ -536,6 +539,80 @@ export async function updateDealClosing(
     return;
   }
   await sb.from("deals").update(fields).eq("id", dealId);
+}
+
+// ── SMS consent (TCPA) ──────────────────────────────────────────────────────
+async function consentRowsForPhone(phone: string): Promise<SmsConsent[]> {
+  const norm = normalizePhone(phone);
+  const sb = getSupabase();
+  if (!sb) return mem.smsConsents.filter((c) => c.phone === norm);
+  const { data } = await sb.from("sms_consents").select("*").eq("phone", norm);
+  return (data as SmsConsent[]) ?? [];
+}
+
+/** True only if the contact has an active, non-revoked opt-in on file. */
+export async function hasSmsConsent(phone: string): Promise<boolean> {
+  return consentFromRows(await consentRowsForPhone(phone));
+}
+
+/** Record an opt-in (documented consent). */
+export async function recordSmsConsent(input: {
+  phone: string;
+  source: string;
+  ownerId?: string | null;
+  buyerId?: string | null;
+}): Promise<void> {
+  const phone = normalizePhone(input.phone);
+  const now = new Date().toISOString();
+  const sb = getSupabase();
+  if (!sb) {
+    mem.smsConsents.push({
+      id: newId("sms"),
+      phone,
+      consented: true,
+      source: input.source,
+      owner_id: input.ownerId ?? null,
+      buyer_id: input.buyerId ?? null,
+      consented_at: now,
+      revoked_at: null,
+      created_at: now,
+    });
+    return;
+  }
+  await sb.from("sms_consents").insert({
+    phone,
+    consented: true,
+    source: input.source,
+    owner_id: input.ownerId ?? null,
+    buyer_id: input.buyerId ?? null,
+  });
+}
+
+/** Honor a STOP: record an opt-out event that revokes consent for this phone. */
+export async function revokeSmsConsent(phone: string, source = "STOP"): Promise<void> {
+  const norm = normalizePhone(phone);
+  const now = new Date().toISOString();
+  const sb = getSupabase();
+  if (!sb) {
+    mem.smsConsents.push({
+      id: newId("sms"),
+      phone: norm,
+      consented: false,
+      source,
+      owner_id: null,
+      buyer_id: null,
+      consented_at: null,
+      revoked_at: now,
+      created_at: now,
+    });
+    return;
+  }
+  await sb.from("sms_consents").insert({
+    phone: norm,
+    consented: false,
+    source,
+    revoked_at: now,
+  });
 }
 
 export { isLive };

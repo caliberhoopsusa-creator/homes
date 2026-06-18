@@ -213,6 +213,21 @@ export interface ClosingTask {
   created_at: string;
 }
 
+/** TCPA consent ledger — one row per opt-in/opt-out event (latest per phone wins). */
+export interface SmsConsent {
+  id: string;
+  /** Digits-only, normalized phone. */
+  phone: string;
+  consented: boolean;
+  source: string | null;
+  owner_id: string | null;
+  buyer_id: string | null;
+  consented_at: string | null;
+  /** Set when the contact texts STOP. */
+  revoked_at: string | null;
+  created_at: string;
+}
+
 // ── insert shapes (db-defaulted columns optional) ────────────────────────────
 export type PropertyInsert = Omit<Property, "id" | "created_at"> &
   Partial<Pick<Property, "id" | "created_at">>;
@@ -235,3 +250,13 @@ export type DealInsert = Omit<Deal, "id" | "created_at" | "stage" | "assigned_bu
   Partial<Pick<Deal, "id" | "created_at" | "stage" | "assigned_buyer_id">>;
 export type ClosingTaskInsert = Omit<ClosingTask, "id" | "created_at" | "status" | "sort"> &
   Partial<Pick<ClosingTask, "id" | "created_at" | "status" | "sort">>;
+export type SmsConsentInsert = Omit<
+  SmsConsent,
+  "id" | "created_at" | "consented" | "consented_at" | "revoked_at" | "owner_id" | "buyer_id"
+> &
+  Partial<
+    Pick<
+      SmsConsent,
+      "id" | "created_at" | "consented" | "consented_at" | "revoked_at" | "owner_id" | "buyer_id"
+    >
+  >;

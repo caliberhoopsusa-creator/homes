@@ -39,6 +39,15 @@ export const closingPhase = z.enum([
 
 export const closingTaskStatus = z.enum(["pending", "done"]);
 
+// Public SMS opt-in submission. `consent` MUST be true (explicit opt-in) — the
+// TCPA paper trail. Phone is validated loosely here; normalized server-side.
+export const smsOptInInput = z.object({
+  phone: z.string().min(7).max(20),
+  consent: z.literal(true),
+  source: z.string().max(40).optional(),
+});
+export type SmsOptInInput = z.infer<typeof smsOptInInput>;
+
 // A candidate from a PropertyProvider, before it becomes a `properties` row.
 export const propertyCandidate = z.object({
   source: z.enum(["attom", "batchdata", "firecrawl", "county", "manual"]),
