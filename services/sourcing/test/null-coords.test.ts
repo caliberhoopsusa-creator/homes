@@ -45,6 +45,10 @@ class FakeStore implements SourcingStore {
     this.rows.push(...rows);
     return rows.length;
   }
+  async existingAddressIndex() {
+    return [];
+  }
+  async mergeDistress() {}
 }
 
 const provider = (cands: PropertyCandidate[]): PropertyProvider => ({

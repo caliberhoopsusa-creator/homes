@@ -7,17 +7,32 @@ import type {
   PropertyCandidate,
   PropertyInsert,
   PropertySource,
+  DistressSignal,
 } from "@parcel/types";
 import { propertyCandidate } from "@parcel/types";
 import type { PropertyProvider } from "./provider.js";
 import { withinRadius } from "./geo.js";
-import { normalizeDistress } from "./normalize.js";
+import { normalizeDistress, normalizeAddress } from "./normalize.js";
+
+/** An existing property row, as needed for address-based list-stacking. */
+export interface AddressIndexRow {
+  id: string;
+  address: string;
+  distress_signals: DistressSignal[] | null;
+}
 
 export interface SourcingStore {
   /** Source ids already present for this source (for cross-run dedupe). */
   existingSourceIds(source: PropertySource): Promise<Set<string>>;
   /** Insert property rows; returns the number actually written. */
   insertProperties(rows: PropertyInsert[]): Promise<number>;
+  /**
+   * Lightweight (id, address, distress_signals) of existing rows, for matching a
+   * pull's candidates to properties already on file by address (list-stacking).
+   */
+  existingAddressIndex(): Promise<AddressIndexRow[]>;
+  /** Replace one property's distress_signals (merge result), keyed by id. */
+  mergeDistress(id: string, signals: DistressSignal[]): Promise<void>;
 }
 
 export interface PullResult {
@@ -27,6 +42,8 @@ export interface PullResult {
   prepared: number;
   /** Rows newly inserted (not already in the store). */
   inserted: number;
+  /** Existing rows that gained new distress signals from this pull (stacked). */
+  stacked: number;
 }
 
 /**
@@ -78,10 +95,54 @@ export async function runPull(
     return !existing.get(c.source)?.has(c.source_id);
   });
 
-  const rows: PropertyInsert[] = fresh.map(toInsert);
-  const inserted = rows.length === 0 ? 0 : await store.insertProperties(rows);
+  // 5. List-stacking. Collapse same-address candidates within this batch (union
+  // their distress signals into one representative), then decide insert-vs-merge
+  // against properties already on file by address — so the same house from two
+  // free lists becomes ONE lead carrying BOTH signals, never a duplicate row.
+  const batchByAddr = new Map<string, PropertyCandidate>();
+  for (const c of fresh) {
+    const key = normalizeAddress(c.address);
+    const rep = batchByAddr.get(key);
+    if (rep) {
+      rep.distress_signals = unionSignals(rep.distress_signals, c.distress_signals);
+    } else {
+      batchByAddr.set(key, { ...c });
+    }
+  }
 
-  return { fetched: raw.length, prepared: deduped.length, inserted };
+  const indexByAddr = new Map<string, AddressIndexRow>();
+  for (const row of await store.existingAddressIndex()) {
+    indexByAddr.set(normalizeAddress(row.address), row);
+  }
+
+  const toInsertRows: PropertyInsert[] = [];
+  let stacked = 0;
+  for (const [key, c] of batchByAddr) {
+    const hit = indexByAddr.get(key);
+    if (!hit) {
+      toInsertRows.push(toInsert(c));
+      continue;
+    }
+    // Already on file → merge any genuinely new signals into the existing row.
+    const merged = unionSignals(hit.distress_signals ?? [], c.distress_signals);
+    if (merged.length > (hit.distress_signals?.length ?? 0)) {
+      await store.mergeDistress(hit.id, merged);
+      stacked += 1;
+    }
+  }
+
+  const inserted =
+    toInsertRows.length === 0 ? 0 : await store.insertProperties(toInsertRows);
+
+  return { fetched: raw.length, prepared: deduped.length, inserted, stacked };
+}
+
+/** Union two distress-signal lists, deduped, order-stable (a's first). */
+function unionSignals(
+  a: ReadonlyArray<DistressSignal>,
+  b: ReadonlyArray<DistressSignal>,
+): DistressSignal[] {
+  return [...new Set([...a, ...b])];
 }
 
 function passesFilters(c: PropertyCandidate, req: RadiusPullRequest): boolean {

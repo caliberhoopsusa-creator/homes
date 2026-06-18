@@ -47,6 +47,39 @@ const ALIASES: Record<string, DistressSignal> = {
   heirs: "inherited",
 };
 
+/**
+ * Canonicalize a street address for cross-source matching (list-stacking). Lower-
+ * cases, strips punctuation, collapses whitespace, and folds the common street-
+ * suffix abbreviations so "1420 Beckwith Ave." and "1420 beckwith avenue" stack.
+ * Conservative on purpose — only safe, unambiguous folds.
+ */
+const SUFFIX: Record<string, string> = {
+  street: "st",
+  avenue: "ave",
+  av: "ave",
+  drive: "dr",
+  road: "rd",
+  lane: "ln",
+  court: "ct",
+  boulevard: "blvd",
+  place: "pl",
+  terrace: "ter",
+  circle: "cir",
+  highway: "hwy",
+  parkway: "pkwy",
+};
+
+export function normalizeAddress(raw: string): string {
+  const words = raw
+    .toLowerCase()
+    .replace(/[.,#]/g, " ")
+    .replace(/[^a-z0-9\s]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => SUFFIX[w] ?? w);
+  return words.join(" ");
+}
+
 /** Normalize raw tags into a deduped array of valid DistressSignal values. */
 export function normalizeDistress(raw: ReadonlyArray<string>): DistressSignal[] {
   const out = new Set<DistressSignal>();

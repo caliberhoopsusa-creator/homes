@@ -1,5 +1,5 @@
-import type { PropertyInsert, PropertySource } from "@parcel/types";
-import type { SourcingStore } from "@parcel/sourcing";
+import type { DistressSignal, PropertyInsert, PropertySource } from "@parcel/types";
+import type { AddressIndexRow, SourcingStore } from "@parcel/sourcing";
 import type { Db } from "../client.js";
 import { unwrap } from "../util.js";
 
@@ -22,5 +22,17 @@ export class SourcingDbStore implements SourcingStore {
       await this.db.from("properties").insert(rows).select("id"),
     ) as Array<{ id: string }>;
     return data.length;
+  }
+
+  async existingAddressIndex(): Promise<AddressIndexRow[]> {
+    return unwrap(
+      await this.db.from("properties").select("id, address, distress_signals"),
+    ) as AddressIndexRow[];
+  }
+
+  async mergeDistress(id: string, signals: DistressSignal[]): Promise<void> {
+    unwrap(
+      await this.db.from("properties").update({ distress_signals: signals }).eq("id", id),
+    );
   }
 }
