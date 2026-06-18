@@ -52,7 +52,7 @@ export function RadiusPullButton() {
         setState("ok");
         setNote(
           n > 0
-            ? `Found ${n} new lead${n === 1 ? "" : "s"}. They're on your board now.`
+            ? `Found ${n} new lead${n === 1 ? "" : "s"}. Open the “Leads” tab to work them.`
             : "No new leads this time — nothing new in the area.",
         );
       } else if (res.ok) {

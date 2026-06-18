@@ -38,15 +38,17 @@ describe("computeNextAction", () => {
     expect(a.tone).toBe("do");
   });
 
-  it("tells a new profitable lead to start outreach", () => {
-    const a = computeNextAction({
-      stage: "Lead",
-      verdict: "clear",
-      contractStatus: null,
-      assigned: false,
-    });
-    expect(a.tone).toBe("do");
-    expect(a.step).toMatch(/offer/i);
+  it("tells a new lead to make an offer (any verdict — wholesaling is a numbers game)", () => {
+    for (const verdict of ["clear", "thin", "pass"] as const) {
+      const a = computeNextAction({
+        stage: "Lead",
+        verdict,
+        contractStatus: null,
+        assigned: false,
+      });
+      expect(a.tone).toBe("do");
+      expect(a.step).toMatch(/offer/i);
+    }
   });
 
   it("says to wait after an offer is sent with no reply", () => {
@@ -60,9 +62,9 @@ describe("computeNextAction", () => {
     expect(a.cta).toBeUndefined();
   });
 
-  it("says to skip a no-spread deal", () => {
+  it("says to skip a no-spread deal past the lead stage", () => {
     const a = computeNextAction({
-      stage: "Lead",
+      stage: "Under contract",
       verdict: "pass",
       contractStatus: null,
       assigned: false,

@@ -113,9 +113,12 @@ export default async function HomePage() {
       <HowItWorks />
 
       <p className="text-sm text-slate-500">
-        Want the full board?{" "}
+        <Link href="/leads" className="font-medium text-blue-600 hover:underline">
+          Browse sourced leads →
+        </Link>{" "}
+        ·{" "}
         <Link href="/pipeline" className="font-medium text-blue-600 hover:underline">
-          Open the pipeline →
+          Open the full pipeline →
         </Link>
       </p>
     </div>

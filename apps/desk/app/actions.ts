@@ -8,6 +8,7 @@ import {
   advanceContract,
   assignDealToBuyer,
   createBuyer,
+  createDealForProperty,
   deleteBuyer,
   dispatchToBuyers,
   seedClosingTasks,
@@ -89,6 +90,15 @@ export async function dispatchDealAction(
   const count = await dispatchToBuyers(dealId, tier);
   revalidatePath(`/deals/${dealId}`);
   return count;
+}
+
+// Promote a sourced property (raw lead) into the deal pipeline.
+export async function workLeadAction(propertyId: string) {
+  const { id } = await createDealForProperty(propertyId);
+  revalidatePath("/leads");
+  revalidatePath("/");
+  revalidatePath("/pipeline");
+  return id;
 }
 
 // ── closing coordinator ────────────────────────────────────────────────────

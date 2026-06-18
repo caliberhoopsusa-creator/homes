@@ -78,15 +78,17 @@ export function computeNextAction(input: NextActionInput): NextAction {
     };
   }
 
-  // 4. A profitable lead with no offer out yet → start outreach.
-  if (stage === "Lead" && verdict !== "pass" && !contractStatus) {
+  // 4. A lead with no offer out yet → make an offer. Wholesaling is a numbers
+  //    game (Max: "make offers"); even a full-value lead is worth a low offer,
+  //    and the deal page shows the most you should pay.
+  if (stage === "Lead" && !contractStatus) {
     return {
       priority: 4,
       tone: "do",
-      statusLine: "Good lead — but you haven't made an offer yet.",
+      statusLine: "New lead — you haven't made an offer yet.",
       step: "Email the owner an offer to buy.",
-      how: "Click “Run outreach” in the top bar. It sends the compliant email sequence for you.",
-      cta: "How to start outreach",
+      how: "Click “Email owners” in the top bar. Offer up to the “Most you should pay” figure on the deal.",
+      cta: "How to make an offer",
       target: "deal",
     };
   }

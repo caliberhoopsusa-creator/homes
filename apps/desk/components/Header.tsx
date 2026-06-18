@@ -6,6 +6,7 @@ import { OutreachButton } from "./OutreachButton";
 
 const NAV = [
   { href: "/", label: "Home" },
+  { href: "/leads", label: "Leads" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/contracts", label: "Contracts" },
   { href: "/buyers", label: "Buyers" },

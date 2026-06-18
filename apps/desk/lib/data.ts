@@ -126,6 +126,56 @@ export async function getContract(id: string): Promise<Contract | null> {
   return (data as Contract) ?? null;
 }
 
+export async function getOwners(): Promise<Owner[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.owners;
+  const { data } = await sb.from("owners").select("*");
+  return (data as Owner[]) ?? [];
+}
+
+export async function getUnderwrites(): Promise<Underwrite[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.underwrites;
+  const { data } = await sb.from("underwrites").select("*");
+  return (data as Underwrite[]) ?? [];
+}
+
+/** Promote a sourced property into the deal pipeline (idempotent). Returns the deal id. */
+export async function createDealForProperty(
+  propertyId: string,
+): Promise<{ id: string }> {
+  const sb = getSupabase();
+  if (!sb) {
+    const existing = mem.deals.find((d) => d.property_id === propertyId);
+    if (existing) return { id: existing.id };
+    const id = newId("deal");
+    mem.deals.push({
+      id,
+      property_id: propertyId,
+      stage: "Lead",
+      assigned_buyer_id: null,
+      notes: null,
+      title_company: null,
+      closing_date: null,
+      created_at: new Date().toISOString(),
+    });
+    return { id };
+  }
+  const { data: found } = await sb
+    .from("deals")
+    .select("id")
+    .eq("property_id", propertyId)
+    .limit(1);
+  const prior = ((found as { id: string }[]) ?? [])[0];
+  if (prior) return { id: prior.id };
+  const { data } = await sb
+    .from("deals")
+    .insert({ property_id: propertyId, stage: "Lead" })
+    .select("id")
+    .single();
+  return { id: (data as { id: string }).id };
+}
+
 // ── writes ───────────────────────────────────────────────────────────────
 export async function setDealStage(
   id: string,
