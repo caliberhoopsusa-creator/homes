@@ -9,6 +9,10 @@ coverage/
 .env
 .env.local
 .env.*.local
+# stray env exports (e.g. .env.local saved as RTF by a text editor)
+*.env.local.rtf
+*:.env.local.rtf
+*.env.rtf
 
 # OS
 .DS_Store
