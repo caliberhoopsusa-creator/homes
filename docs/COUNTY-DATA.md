@@ -24,6 +24,17 @@ county export (CSV)  →  csvToCountyRecords (column map)  →  normalized JSON 
   (`/api/county/yellowstone-tax-delinquent`).
 - **`arcgis`** — a live county/state GIS parcel layer (returns JSON). Needs network egress. The route
   fetches `<layer>/query?...f=json` and normalizes via `arcgisToCountyRecords`.
+- **`socrata`** — a city/county **open-data (SODA)** dataset on `data.<city>.gov`: code violations,
+  evictions, vacant/demolition lists — high-signal FREE distress lists. The route builds
+  `https://<domain>/resource/<id>.json?$where=...&$limit=N` via `socrataQueryUrl` and normalizes via
+  `socrataToCountyRecords`. Optional `SOCRATA_APP_TOKEN` env (raises rate limits; sent as `X-App-Token`,
+  never hardcoded). Example slug: **`/api/county/socrata-code-violations-example`** (City of Chicago
+  building violations — swap `domain`/`datasetId`/`map` for your market's portal + columns).
+
+  Find the dataset id + columns: open `https://<domain>/resource/<id>.json?$limit=1` and read the keys.
+  Then add it to `COUNTY_RECORDS_SOURCES` with `"distress":"code_violation"` (or `eviction`, `vacant`).
+  Because leads now **list-stack by address**, the same house appearing here *and* on the absentee/tax
+  feeds collapses into one lead carrying every signal — which is exactly what lifts its motivation score.
 
 ## Real Montana source (wired): the statewide Cadastral
 MT runs a centralized cadastral GIS covering every county — **owner name, owner MAILING city/state,

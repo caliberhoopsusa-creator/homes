@@ -1,15 +1,20 @@
 // Free county-records feed. Serves normalized CountyRecord[] JSON that the
 // CountyRecordsProvider (PROPERTY_PROVIDER=county) fetches — the zero-cost lead
 // path. Two kinds of feed:
-//   - csv:    a bundled/exported county CSV (works offline; demo + manual exports)
-//   - arcgis: a live county/state GIS parcel layer (needs network egress)
+//   - csv:     a bundled/exported county CSV (works offline; demo + manual exports)
+//   - arcgis:  a live county/state GIS parcel layer (needs network egress)
+//   - socrata: a city/county open-data (SODA) dataset — code violations, evictions,
+//              vacant/demolition lists (needs network egress; optional app token)
 // Point COUNTY_RECORDS_SOURCES at {desk}/api/county/<slug>. See docs/COUNTY-DATA.md.
 import {
   arcgisQueryUrl,
   arcgisToCountyRecords,
   csvToCountyRecords,
+  socrataQueryUrl,
+  socrataToCountyRecords,
   type ArcgisFieldMap,
   type CsvColumnMap,
+  type SocrataFieldMap,
 } from "@parcel/sourcing";
 
 export const runtime = "nodejs";
@@ -26,6 +31,19 @@ type Feed =
       resultRecordCount?: number;
       /** When the situs city/state/zip live in one combined field (mapped to `city`),
        *  split it into city/state/zip (e.g. "BILLINGS, MT 59101"). */
+      splitCityStateZip?: boolean;
+    }
+  | {
+      kind: "socrata";
+      /** Portal host, e.g. "data.cityofchicago.org". */
+      domain: string;
+      /** Dataset (4x4) id, e.g. "22u3-xenr". */
+      datasetId: string;
+      where?: string;
+      select?: string;
+      order?: string;
+      limit?: number;
+      map: SocrataFieldMap;
       splitCityStateZip?: boolean;
     };
 
@@ -67,6 +85,26 @@ TD-1003,3410 Granger Ave,Billings,MT,59102,4,312000`,
       est_value: "TotalValue",
     },
   },
+
+  // EXAMPLE Socrata (SODA) code-violation feed. Thousands of cities publish these
+  // on data.<city>.gov — a high-signal FREE distress list. This points at a real,
+  // stable dataset (City of Chicago building violations) to prove the loop; for
+  // your own market, swap domain/datasetId/map for your city's portal + columns
+  // and add the slug to COUNTY_RECORDS_SOURCES with distress: "code_violation".
+  // Verify the dataset's column names at https://<domain>/resource/<id>.json?$limit=1
+  "socrata-code-violations-example": {
+    kind: "socrata",
+    domain: "data.cityofchicago.org",
+    datasetId: "22u3-xenr",
+    where: "violation_status='OPEN'",
+    select: "id,address,violation_status,violation_date",
+    order: "violation_date DESC",
+    limit: 200,
+    map: {
+      record_id: "id",
+      address: "address",
+    },
+  },
 };
 
 const CITY_STATE_ZIP = /^(.*?),?\s*([A-Za-z]{2})\s+(\d{5})(?:-\d{4})?$/;
@@ -100,6 +138,32 @@ export async function GET(
     return Response.json(csvToCountyRecords(feed.csv, feed.map));
   }
 
+  if (feed.kind === "socrata") {
+    const url = socrataQueryUrl(feed.domain, feed.datasetId, {
+      where: feed.where,
+      select: feed.select,
+      order: feed.order,
+      limit: feed.limit,
+    });
+    // App token is optional (raises rate limits); read from env, never hardcoded.
+    const token = process.env.SOCRATA_APP_TOKEN?.trim();
+    const headers = token ? { "X-App-Token": token } : undefined;
+    try {
+      const res = await fetchWithRetry(url, headers);
+      if (!res.ok) {
+        return Response.json({ error: `upstream ${res.status}` }, { status: 502 });
+      }
+      let records = socrataToCountyRecords(await res.json(), feed.map);
+      if (feed.splitCityStateZip) records = splitCityStateZip(records);
+      return Response.json(records);
+    } catch (err) {
+      return Response.json(
+        { error: err instanceof Error ? err.message : "feed fetch failed" },
+        { status: 502 },
+      );
+    }
+  }
+
   // arcgis: fetch the live layer (server-side; requires egress) and normalize.
   // The government endpoint can be slow/flaky, so we time out and retry once
   // rather than letting a transient hiccup fail the operator's whole lead pull.
@@ -127,14 +191,20 @@ export async function GET(
 const FETCH_TIMEOUT_MS = 25_000;
 
 /** GET with a timeout; one retry on timeout/network error before giving up. */
-async function fetchWithRetry(url: string): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  extraHeaders?: Record<string, string>,
+): Promise<Response> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < 2; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
     try {
       return await fetch(url, {
-        headers: { "user-agent": "Mozilla/5.0 (compatible; Parcel/1.0)" },
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; Parcel/1.0)",
+          ...extraHeaders,
+        },
         signal: ctrl.signal,
       });
     } catch (err) {

@@ -25,11 +25,14 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **193 tests pass** (underwriting 40, sourcing 36,
+- **8 workspace projects** typecheck clean; **198 tests pass** (underwriting 40, sourcing 41,
   skiptrace 12, outreach 43, intake 15, desk 47); the Next.js desk builds. Live DB = `homes`.
 - **List-stacking** in `runPull`: the same address from multiple free lists collapses into ONE
   property carrying the union of distress signals (cross-source dedupe by normalized address) —
   no duplicate rows, and the motivation score reflects the full stack.
+- **Socrata (SODA) adapter** (`adapters/socrata.ts`): a third free-feed format alongside csv/arcgis,
+  for city/county open-data (code violations, evictions, vacant lists). Wired into the county ETL
+  route with an example slug; optional `SOCRATA_APP_TOKEN`.
 - **Autopilot** (`/api/cron`, `vercel.json` daily) runs the funnel hands-off: pull → score →
   skip-trace → underwrite → send the *due* outreach touch per owner (cadence-aware, no re-spam).
   Only human action left = the one-click contract approval. Enable by deploying + setting `CRON_SECRET`.
