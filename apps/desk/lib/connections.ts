@@ -50,6 +50,9 @@ export function getConnections(): Connection[] {
   // 6. Contract template (the Montana attorney gate)
   const templateReviewed = env.CONTRACT_TEMPLATE_REVIEWED === "true";
 
+  // 7. Operator login
+  const loginOn = has("DESK_PASSWORD");
+
   return [
     {
       id: "database",
@@ -117,6 +120,17 @@ export function getConnections(): Connection[] {
       how: templateReviewed
         ? "Done."
         : "Have a Montana RE attorney review the assignment template, then set CONTRACT_TEMPLATE_REVIEWED=true.",
+    },
+    {
+      id: "login",
+      label: "Operator login",
+      status: loginOn ? "connected" : "off",
+      detail: loginOn
+        ? "Password login is on — the desk is protected."
+        : "Open — anyone with the URL can access. Fine on your laptop, not for deploy.",
+      how: loginOn
+        ? "Done."
+        : "Before deploying publicly, set DESK_PASSWORD in the environment to require login.",
     },
   ];
 }
