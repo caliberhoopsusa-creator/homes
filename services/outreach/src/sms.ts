@@ -5,6 +5,7 @@
 //
 // You still need, externally: a Twilio account, a registered number/10DLC
 // campaign, a documented opt-in source per recipient, and STOP/HELP auto-replies.
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { EnvLike, FetchLike } from "./env.js";
 import { ambientEnv, ambientFetch } from "./env.js";
 
@@ -110,6 +111,29 @@ export function assertTextable(state: SmsRecipientState): void {
   if (state.suppressed) {
     throw new Error("SMS blocked: recipient opted out (STOP).");
   }
+}
+
+/**
+ * Validate Twilio's X-Twilio-Signature on an inbound webhook. Twilio signs the
+ * full request URL plus the POST params (sorted by key, concatenated) with
+ * HMAC-SHA1 keyed by the auth token, base64-encoded. Returns true if it matches.
+ * Reject inbound webhooks that fail this before trusting them.
+ */
+export function validateTwilioSignature(args: {
+  authToken: string;
+  url: string;
+  params: Record<string, string>;
+  signature: string | null;
+}): boolean {
+  if (!args.signature) return false;
+  let data = args.url;
+  for (const key of Object.keys(args.params).sort()) {
+    data += key + args.params[key];
+  }
+  const expected = createHmac("sha1", args.authToken).update(data, "utf8").digest("base64");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(args.signature);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 const STOP_WORDS = ["stop", "stopall", "unsubscribe", "cancel", "end", "quit", "revoke"];

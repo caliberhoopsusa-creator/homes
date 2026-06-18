@@ -1,7 +1,7 @@
 // Twilio inbound-SMS webhook. Honors STOP (revoke consent + suppress) and HELP
 // (info reply) — carrier-required keyword handling. Replies with TwiML. A genuine
 // reply (not a keyword) is left for a human; we never auto-text back.
-import { smsKeyword } from "@parcel/outreach";
+import { smsKeyword, validateTwilioSignature } from "@parcel/outreach";
 import { revokeSmsConsent } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -16,8 +16,26 @@ function twiml(message?: string): Response {
 
 export async function POST(req: Request): Promise<Response> {
   const form = await req.formData().catch(() => null);
-  const from = (form?.get("From") as string) ?? "";
-  const text = (form?.get("Body") as string) ?? "";
+  if (!form) return twiml();
+
+  const params: Record<string, string> = {};
+  for (const [k, v] of form.entries()) if (typeof v === "string") params[k] = v;
+
+  // Verify the request really came from Twilio (HMAC over URL + params). Enforced
+  // once TWILIO_AUTH_TOKEN is set; skipped in dev/mock so the loop runs keyless.
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (authToken) {
+    const ok = validateTwilioSignature({
+      authToken,
+      url: process.env.TWILIO_WEBHOOK_URL ?? req.url,
+      params,
+      signature: req.headers.get("x-twilio-signature"),
+    });
+    if (!ok) return new Response("invalid signature", { status: 403 });
+  }
+
+  const from = params.From ?? "";
+  const text = params.Body ?? "";
 
   const keyword = smsKeyword(text);
   if (keyword === "stop" && from) {

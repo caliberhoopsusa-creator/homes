@@ -12,6 +12,11 @@ import {
   makeStorage,
 } from "@parcel/intake";
 import { createServiceClient, IntakeDbStore } from "@parcel/db";
+import { suppressEmailAddress } from "@/lib/data";
+
+// Any reply asking to be removed → permanent suppression (CAN-SPAM opt-out), for
+// buyers and owners alike. We over-honor opt-outs deliberately.
+const OPT_OUT = /\b(unsubscribe|remove me|opt[\s-]?out|stop)\b/i;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +50,12 @@ export async function POST(req: NextRequest): Promise<Response> {
   const email = parseInboundParse(fields);
   if (!email.fromEmail) {
     return Response.json({ ok: false, error: "missing sender" }, { status: 400 });
+  }
+
+  // Honor opt-outs immediately (buyer or owner) before any other processing.
+  if (OPT_OUT.test(fields.text ?? fields.subject ?? "")) {
+    await suppressEmailAddress(email.fromEmail, "unsubscribe").catch(() => {});
+    return Response.json({ ok: true, suppressed: email.fromEmail });
   }
 
   // The store needs Supabase service-role env. Until that's wired, acknowledge

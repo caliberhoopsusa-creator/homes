@@ -39,6 +39,7 @@ const mem = {
   contracts: fx.contracts.map((c) => ({ ...c })) as Contract[],
   closingTasks: [] as ClosingTask[],
   smsConsents: [] as SmsConsent[],
+  suppressions: [] as string[],
 };
 
 const newId = (prefix: string) =>
@@ -321,14 +322,30 @@ const DISPO_TOP_N = 5;
 
 /** True if an email is on the permanent suppression list (CAN-SPAM). */
 export async function isEmailSuppressed(email: string): Promise<boolean> {
+  const e = email.trim().toLowerCase();
   const sb = getSupabase();
-  if (!sb) return false; // fixtures carry no suppression list
+  if (!sb) return mem.suppressions.includes(e);
   const { data } = await sb
     .from("suppressions")
     .select("email")
-    .eq("email", email)
+    .eq("email", e)
     .limit(1);
   return (((data as { email: string }[]) ?? []).length) > 0;
+}
+
+/** Permanently suppress an email (opt-out). Idempotent. Honors CAN-SPAM opt-outs. */
+export async function suppressEmailAddress(
+  email: string,
+  reason = "unsubscribe",
+): Promise<void> {
+  const e = email.trim().toLowerCase();
+  if (!e) return;
+  const sb = getSupabase();
+  if (!sb) {
+    if (!mem.suppressions.includes(e)) mem.suppressions.push(e);
+    return;
+  }
+  await sb.from("suppressions").upsert({ email: e, reason }, { onConflict: "email" });
 }
 
 // Send the compliant buyer-disposition email to each target buyer (mock provider

@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { createHmac } from "node:crypto";
 import {
   assertTextable,
   smsKeyword,
   makeSmsProvider,
   MockSmsProvider,
+  validateTwilioSignature,
 } from "../src/sms.js";
 
 describe("assertTextable (TCPA gate)", () => {
@@ -35,6 +37,40 @@ describe("smsKeyword", () => {
   });
   it("returns null for normal replies", () => {
     expect(smsKeyword("yeah I'd sell")).toBeNull();
+  });
+});
+
+describe("validateTwilioSignature", () => {
+  const authToken = "test-auth-token";
+  const url = "https://desk.example/api/sms/inbound";
+  const params = { From: "+14065550000", Body: "STOP" };
+  const sign = (p: Record<string, string>) => {
+    let data = url;
+    for (const k of Object.keys(p).sort()) data += k + p[k];
+    return createHmac("sha1", authToken).update(data, "utf8").digest("base64");
+  };
+
+  it("accepts a correctly-signed request", () => {
+    expect(
+      validateTwilioSignature({ authToken, url, params, signature: sign(params) }),
+    ).toBe(true);
+  });
+
+  it("rejects a missing or tampered signature", () => {
+    expect(validateTwilioSignature({ authToken, url, params, signature: null })).toBe(false);
+    expect(validateTwilioSignature({ authToken, url, params, signature: "bogus" })).toBe(false);
+  });
+
+  it("rejects when params don't match the signature", () => {
+    const sig = sign(params);
+    expect(
+      validateTwilioSignature({
+        authToken,
+        url,
+        params: { ...params, Body: "tampered" },
+        signature: sig,
+      }),
+    ).toBe(false);
   });
 });
 

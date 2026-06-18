@@ -2,11 +2,23 @@
 // the /sms-optin form. Requires explicit consent=true; stores phone + source.
 import { smsOptInInput } from "@parcel/types";
 import { recordSmsConsent } from "@/lib/data";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Public endpoint → cap submissions per IP to blunt consent-spam abuse.
+const MAX_PER_WINDOW = 5;
+const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 export async function POST(req: Request): Promise<Response> {
+  if (!rateLimit(`optin:${clientIp(req)}`, MAX_PER_WINDOW, WINDOW_MS)) {
+    return Response.json(
+      { ok: false, error: "Too many requests — please try again later." },
+      { status: 429 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
