@@ -11,6 +11,7 @@ const NAV = [
   { href: "/contracts", label: "Contracts" },
   { href: "/buyers", label: "Buyers" },
   { href: "/dashboard", label: "Money" },
+  { href: "/setup", label: "Setup" },
 ];
 
 // Client header so we can highlight the current page. The live/demo badge is
