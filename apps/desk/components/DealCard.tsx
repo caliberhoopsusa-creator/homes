@@ -71,8 +71,12 @@ export function DealCard({
 
       <div className="mt-2 flex items-center justify-between">
         <VerdictChip verdict={underwrite?.verdict ?? null} />
-        <span className="text-sm font-semibold text-slate-800">
-          {usd(underwrite?.fee_potential)}
+        <span
+          className="text-sm text-slate-800"
+          title="Estimated profit (your assignment fee)"
+        >
+          <span className="text-xs text-slate-400">est. profit </span>
+          <span className="font-semibold">{usd(underwrite?.fee_potential)}</span>
         </span>
       </div>
 

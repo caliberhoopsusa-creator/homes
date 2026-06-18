@@ -10,10 +10,12 @@ export const usd = (n: number | null | undefined): string =>
         maximumFractionDigits: 0,
       });
 
+// Plain-English verdict labels (shown on deal cards + the spread bar). The
+// underlying codes stay clear/thin/pass; these are just what a beginner reads.
 export const VERDICT_LABEL: Record<Verdict, string> = {
-  clear: "Clear",
-  thin: "Thin",
-  pass: "Pass",
+  clear: "Worth working",
+  thin: "Marginal",
+  pass: "Skip",
 };
 
 // Tailwind classes per verdict for chips.
