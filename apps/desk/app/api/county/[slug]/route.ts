@@ -101,15 +101,15 @@ export async function GET(
   }
 
   // arcgis: fetch the live layer (server-side; requires egress) and normalize.
+  // The government endpoint can be slow/flaky, so we time out and retry once
+  // rather than letting a transient hiccup fail the operator's whole lead pull.
   const url = arcgisQueryUrl(feed.layerUrl, {
     where: feed.where,
     outFields: feed.outFields,
     resultRecordCount: feed.resultRecordCount,
   });
   try {
-    const res = await fetch(url, {
-      headers: { "user-agent": "Mozilla/5.0 (compatible; Parcel/1.0)" },
-    });
+    const res = await fetchWithRetry(url);
     if (!res.ok) {
       return Response.json({ error: `upstream ${res.status}` }, { status: 502 });
     }
@@ -122,4 +122,26 @@ export async function GET(
       { status: 502 },
     );
   }
+}
+
+const FETCH_TIMEOUT_MS = 25_000;
+
+/** GET with a timeout; one retry on timeout/network error before giving up. */
+async function fetchWithRetry(url: string): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(url, {
+        headers: { "user-agent": "Mozilla/5.0 (compatible; Parcel/1.0)" },
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      lastErr = err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("feed fetch failed");
 }
