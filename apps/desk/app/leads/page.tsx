@@ -7,6 +7,8 @@ import {
   getUnderwrites,
 } from "@/lib/data";
 import { WorkLeadButton } from "@/components/WorkLeadButton";
+import { LeadScoreBadge } from "@/components/LeadScoreBadge";
+import { scoreLead } from "@/lib/scoring";
 import { usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -34,12 +36,21 @@ export default async function LeadsPage() {
 
   const leads = properties
     .filter((p) => !dealProps.has(p.id))
-    .map((p) => ({
-      p,
-      owner: ownerByProp.get(p.id) ?? null,
-      uw: uwByProp.get(p.id) ?? null,
-    }))
-    .sort((a, b) => (b.p.est_value ?? 0) - (a.p.est_value ?? 0));
+    .map((p) => {
+      const uw = uwByProp.get(p.id) ?? null;
+      const score = scoreLead({
+        signals: p.distress_signals ?? [],
+        feePotential: uw?.fee_potential ?? null,
+        mao: uw?.your_mao ?? null,
+      });
+      return { p, owner: ownerByProp.get(p.id) ?? null, uw, score };
+    })
+    // Hottest (most motivated) leads first; value breaks ties.
+    .sort(
+      (a, b) =>
+        b.score.score - a.score.score ||
+        (b.p.est_value ?? 0) - (a.p.est_value ?? 0),
+    );
 
   const shown = leads.slice(0, SHOW);
 
@@ -53,7 +64,9 @@ export default async function LeadsPage() {
           Leads
         </h1>
         <p className="max-w-2xl text-sm text-slate-500">
-          Properties you've sourced but haven't started working yet. Pick one and{" "}
+          Properties you've sourced but haven't started working yet, ranked by{" "}
+          <strong className="text-slate-700">motivation</strong> — leads on more
+          distress lists with a bigger spread rise to the top. Start at the top:{" "}
           <strong className="text-slate-700">Work this lead</strong> to add it to
           your pipeline, then email the owner an offer.
         </p>
@@ -70,16 +83,22 @@ export default async function LeadsPage() {
       ) : (
         <>
           <p className="text-xs text-slate-400">
-            Showing {shown.length} of {leads.length} · sorted by value
+            Showing {shown.length} of {leads.length} · sorted by motivation
+            (hottest first)
           </p>
           <div className="space-y-2">
-            {shown.map(({ p, owner, uw }) => (
+            {shown.map(({ p, owner, uw, score }) => (
               <div
                 key={p.id}
                 className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-900">{p.address}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-900">
+                      {p.address}
+                    </span>
+                    <LeadScoreBadge score={score} />
+                  </div>
                   <div className="text-sm text-slate-500">
                     {[p.city, p.state].filter(Boolean).join(", ")}
                     {p.zip ? ` ${p.zip}` : ""}

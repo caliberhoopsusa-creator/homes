@@ -15,7 +15,14 @@ export type DistressSignal =
   | "tax_delinquent"
   | "preforeclosure"
   | "vacant"
-  | "absentee";
+  | "absentee"
+  | "code_violation"
+  | "probate"
+  | "eviction"
+  | "lien"
+  | "water_shutoff"
+  | "divorce"
+  | "inherited";
 export type MessageDirection = "outbound" | "inbound";
 /** Seller follow-up sequence vs buyer-disposition blast — both CAN-SPAM-governed. */
 export type MessageKind = "seller_outreach" | "buyer_dispo";

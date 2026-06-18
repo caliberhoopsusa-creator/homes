@@ -32,7 +32,12 @@ const taxSource: CountySource = {
 };
 const probateSource: CountySource = {
   url: "https://yellowstone.county.gov/probate.json",
-  distress: "probate" as never, // not in the enum → normalizeDistress drops it (tested below)
+  distress: "probate", // a recognized free-list signal
+  jurisdiction: "Yellowstone County, MT",
+};
+const bogusSource: CountySource = {
+  url: "https://yellowstone.county.gov/bogus.json",
+  distress: "not_a_real_signal" as never, // not in the enum → dropped
   jurisdiction: "Yellowstone County, MT",
 };
 
@@ -101,10 +106,19 @@ describe("CountyRecordsProvider", () => {
     await expect(provider.search(req)).rejects.toThrow(/CountyRecordsProvider/);
   });
 
-  it("normalizeDistress drops an unknown distress label (probate not in enum)", async () => {
+  it("tags rows from a recognized free-list source (probate)", async () => {
     const provider = new CountyRecordsProvider({
       sources: [probateSource],
       fetchImpl: fetchStub({ [probateSource.url]: [{ address: "9 Elm" }] }),
+    });
+    const out = await provider.search(req);
+    expect(out[0]!.distress_signals).toEqual(["probate"]);
+  });
+
+  it("normalizeDistress drops an unrecognized distress label", async () => {
+    const provider = new CountyRecordsProvider({
+      sources: [bogusSource],
+      fetchImpl: fetchStub({ [bogusSource.url]: [{ address: "9 Elm" }] }),
     });
     const out = await provider.search(req);
     expect(out[0]!.distress_signals).toEqual([]);

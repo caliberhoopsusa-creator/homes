@@ -7,6 +7,13 @@ export const distressSignal = z.enum([
   "preforeclosure",
   "vacant",
   "absentee",
+  "code_violation",
+  "probate",
+  "eviction",
+  "lien",
+  "water_shutoff",
+  "divorce",
+  "inherited",
 ]);
 
 export const verdict = z.enum(["clear", "thin", "pass"]);
