@@ -15,8 +15,14 @@ export interface FactoryOptions {
 
 /** Build the configured skip-trace provider. */
 export function createProvider(opts: FactoryOptions = {}): SkipTraceProvider {
+  // SKIPTRACE_PROVIDER lets skip-trace use a real vendor (e.g. batchdata) for
+  // accurate seller contacts while sourcing stays on the free county feed. Falls
+  // back to PROPERTY_PROVIDER, then mock.
   const name =
-    opts.provider ?? (process.env.PROPERTY_PROVIDER as ProviderName) ?? "mock";
+    opts.provider ??
+    (process.env.SKIPTRACE_PROVIDER as ProviderName) ??
+    (process.env.PROPERTY_PROVIDER as ProviderName) ??
+    "mock";
 
   switch (name) {
     case "batchdata":
