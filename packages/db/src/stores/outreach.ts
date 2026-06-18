@@ -1,5 +1,9 @@
 import type { MessageInsert, MessageStatus, Owner, Property } from "@parcel/types";
-import type { ClearingOwner, OutreachStore } from "@parcel/outreach";
+import type {
+  ClearingOwner,
+  OutreachStore,
+  OwnerTouchState,
+} from "@parcel/outreach";
 import type { Db } from "../client.js";
 import { unwrap, startOfUtcDay } from "../util.js";
 
@@ -67,5 +71,28 @@ export class OutreachDbStore implements OutreachStore {
         .gte("sent_at", startOfUtcDay()),
     ) as Array<{ id: string }>;
     return rows.length;
+  }
+
+  async outreachHistory(): Promise<Map<string, OwnerTouchState>> {
+    // Sent seller-outreach touches; reduce to max step + latest send per owner.
+    const rows = unwrap(
+      await this.db
+        .from("messages")
+        .select("owner_id, step, sent_at")
+        .eq("kind", "seller_outreach")
+        .eq("direction", "outbound")
+        .eq("status", "sent"),
+    ) as Array<{ owner_id: string | null; step: number | null; sent_at: string | null }>;
+
+    const history = new Map<string, OwnerTouchState>();
+    for (const r of rows) {
+      if (!r.owner_id) continue;
+      const step = r.step ?? 0;
+      const prev = history.get(r.owner_id);
+      if (!prev || step > prev.lastStep) {
+        history.set(r.owner_id, { lastStep: step, lastSentAt: r.sent_at });
+      }
+    }
+    return history;
   }
 }

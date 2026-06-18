@@ -18,15 +18,20 @@ already points at it. The desk runs on fixtures until `SUPABASE_SERVICE_ROLE_KEY
 
 ---
 
-## 0. TL;DR current state (as of 2026-06-16)
+## 0. TL;DR current state (as of 2026-06-18)
 
 A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 **Every stage is built and green, runnable end-to-end locally with ZERO API keys**
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **146 tests pass** (underwriting 40, sourcing 32,
-  skiptrace 12, outreach 22, intake 15, desk 25); the Next.js desk builds. Live DB = `homes`.
+- **8 workspace projects** typecheck clean; **190 tests pass** (underwriting 40, sourcing 33,
+  skiptrace 12, outreach 43, intake 15, desk 47); the Next.js desk builds. Live DB = `homes`.
+- **Autopilot** (`/api/cron`, `vercel.json` daily) runs the funnel hands-off: pull → score →
+  skip-trace → underwrite → send the *due* outreach touch per owner (cadence-aware, no re-spam).
+  Only human action left = the one-click contract approval. Enable by deploying + setting `CRON_SECRET`.
+- **Lead motivation scoring** (`lib/scoring.ts`): list-stacking + spread → 0–100 Hot/Warm/Cold;
+  Leads page ranks hottest-first so skip-trace spend goes to the most motivated sellers.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
 - **Domain knowledge:** `docs/RESEARCH-wholesaling.md` is the pro playbook (deep research). Build-affecting
@@ -400,3 +405,32 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
   gate, CAN-SPAM on the new buyer blasts, email-first — no SMS/calls). Cold-calling/SMS stay manual by design.
 - Open: Firecrawl credits (or a real sold-comps source to replace mock comps); SendGrid for real buyer/seller
   sends; the MT attorney review (the one true hard gate). PRD §6.4 now reflects 6 touches (was 3).
+
+### Session 9 — 2026-06-18 (cheaper leads + full autopilot — Zach Ginn Wholesaling Bible)
+- Read the **Zach Ginn Wholesaling Bible** (144 pp). Thesis: cheaper leads = **free public-record
+  lists** + **list-stacking** (a property on more distress lists = more motivated seller) + score
+  before you skip-trace. Delivered a full breakdown, then built the top two levers.
+- **Lead motivation scoring + stacking vocabulary:**
+  - `@parcel/types` DistressSignal **+7 free-list signals** (code_violation, probate, eviction, lien,
+    water_shutoff, divorce, inherited) — additive keystone, zero consumer ripple; sourcing
+    `normalize.ts` aliases the common portal spellings.
+  - `apps/desk/lib/scoring.ts` — pure `scoreLead()` → 0–100 + Hot/Warm/Cold + reasons. Deadline
+    distress > saturated absentee; **stacking bonus** per extra list; underwritten spread adds up to 30.
+  - Leads page now **ranks by motivation** (hottest first) with a hover-explained `LeadScoreBadge`.
+    +8 desk tests.
+- **Autopilot (the "money without picking up the phone" engine):**
+  - `@parcel/outreach` cadence scheduler — pure `nextDueStep(history, now)` over the 0/3/7/14/21/30-day
+    sequence + `runDueTouches()` driver: sends each owner only the touch they're **due** for (advances
+    the sequence, never re-spams). Same hard gates (suppression, daily cap, CAN-SPAM). +9 tests.
+  - `packages/db` `OutreachDbStore.outreachHistory()` (optional store method → max step + last-sent
+    per owner). No existing fake broke.
+  - `apps/desk/lib/autopilot.ts` `runAutopilot()` — one idempotent daily pass: pull → skip-trace →
+    underwrite → due touches (farm area + ramp from env; `AUTOPILOT_ENABLED=false` pauses).
+  - `/api/cron` route — **CRON_SECRET-guarded** (refuses anonymous trigger), never sends a contract;
+    `vercel.json` schedules it daily 14:00 UTC; middleware allowlists it; Setup page shows an
+    **Autopilot** status row.
+- Verified: **8/8 typecheck, 190 tests** (outreach 34→43, desk 25→47). Compliance held: contract send
+  stays a human one-click (CLAUDE.md #3), email-first, no cold SMS/calls.
+- Open / next: DB-level address stacking (dedup same address across sources, merge signals); a Socrata
+  free-source adapter (code-violation/eviction feeds); the three KPI scoreboards; buyer qualification
+  fields. Still pending: SendGrid + skip-trace keys + the MT attorney review (the one hard gate).

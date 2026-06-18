@@ -13,6 +13,7 @@ const PUBLIC = [
   "/api/sms/inbound",
   "/api/sms/optin",
   "/sms-optin",
+  "/api/cron",
   "/manifest.webmanifest",
 ];
 

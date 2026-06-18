@@ -53,6 +53,10 @@ export function getConnections(): Connection[] {
   // 7. Operator login
   const loginOn = has("DESK_PASSWORD");
 
+  // 8. Autopilot (scheduled daily funnel run)
+  const cronOn = has("CRON_SECRET");
+  const autopilotPaused = env.AUTOPILOT_ENABLED === "false";
+
   return [
     {
       id: "database",
@@ -131,6 +135,21 @@ export function getConnections(): Connection[] {
       how: loginOn
         ? "Done."
         : "Before deploying publicly, set DESK_PASSWORD in the environment to require login.",
+    },
+    {
+      id: "autopilot",
+      label: "Autopilot (runs the funnel daily)",
+      status: cronOn ? (autopilotPaused ? "partial" : "connected") : "off",
+      detail: cronOn
+        ? autopilotPaused
+          ? "Configured but paused (AUTOPILOT_ENABLED=false)."
+          : "On — each day it finds leads, traces, underwrites, and sends due emails."
+        : "Off. You're running the funnel by hand (Find leads / Email owners).",
+      how: cronOn
+        ? autopilotPaused
+          ? "Remove AUTOPILOT_ENABLED=false (or set it to true) to resume."
+          : "Done — the daily run handles outreach. You only approve contracts."
+        : "Deploy on Vercel and set CRON_SECRET to enable the daily run (vercel.json schedules it).",
     },
   ];
 }
