@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { Property, UnderwriteInsert } from "@parcel/types";
 import { runUnderwriting, type UnderwriteStore } from "../src/run.js";
 import { estimateInputs, REPAIRS_PER_SQFT } from "../src/estimate.js";
+import { MockCompsProvider } from "../src/comps-provider.js";
 
 function prop(p: Partial<Property>): Property {
   return {
@@ -69,5 +70,27 @@ describe("runUnderwriting()", () => {
     expect(store.rows).toHaveLength(2);
     expect(tally.clear + tally.thin + tally.pass).toBe(2);
     expect(store.rows.every((r) => r.is_estimate === true)).toBe(true);
+    expect(store.rows.every((r) => r.comp_count === 0)).toBe(true);
+  });
+
+  it("uses comps-backed ARV (is_estimate=false, comp_count>0) when a provider yields comps", async () => {
+    // Subject needs geo + sqft for the mock provider to emit comps.
+    const store = new FakeStore([
+      prop({ id: "geo", lat: 46.87, lng: -113.99, sqft: 1500, est_value: 350_000 }),
+    ]);
+    const tally = await runUnderwriting(store, { compsProvider: new MockCompsProvider() });
+    expect(store.rows).toHaveLength(1);
+    const row = store.rows[0]!;
+    expect(row.is_estimate).toBe(false);
+    expect(row.comp_count).toBeGreaterThan(0);
+    expect(row.arv).toBeGreaterThan(0);
+    expect(tally.clear + tally.thin + tally.pass).toBe(1);
+  });
+
+  it("falls back to the heuristic when the subject lacks geo for comps", async () => {
+    const store = new FakeStore([prop({ id: "nogeo", lat: null, lng: null })]);
+    await runUnderwriting(store, { compsProvider: new MockCompsProvider() });
+    expect(store.rows[0]!.is_estimate).toBe(true);
+    expect(store.rows[0]!.comp_count).toBe(0);
   });
 });

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:clean": "rm -rf .next && next dev"
   },
   "dependencies": {
     "@parcel/db": "workspace:*",

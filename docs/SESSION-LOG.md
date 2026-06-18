@@ -25,8 +25,8 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **110 tests pass** (underwriting 15, sourcing 32,
-  skiptrace 12, outreach 22, intake 15, desk 14); the Next.js desk builds. Live DB = `homes`.
+- **8 workspace projects** typecheck clean; **146 tests pass** (underwriting 40, sourcing 32,
+  skiptrace 12, outreach 22, intake 15, desk 25); the Next.js desk builds. Live DB = `homes`.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
 - **Domain knowledge:** `docs/RESEARCH-wholesaling.md` is the pro playbook (deep research). Build-affecting
@@ -366,3 +366,37 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 - Verified: 8/8 typecheck, **97 tests** (89 services + 8 desk), desk builds. All committed + pushed.
 - Still external/paid (cannot be automated): provision Supabase, real provider keys, and the **MT attorney
   review** (see `docs/GO-LIVE.md` + `docs/MONTANA-LEGAL.md`). GitHub issue comments pending (MCP needs re-auth).
+
+### Session 8 — 2026-06-17 (automate the masterclass — Max Maxwell wholesaling system)
+- Operator restored the live desk (killed stray `next dev` procs corrupting `.next`; one clean server),
+  ran a radius pull (Firecrawl **402 / out of credits** — external billing block; proved the pull→live-DB
+  wiring with a one-off `PROPERTY_PROVIDER=mock` override: 244→863 properties), and walked
+  assign → queued contract → **View PDF** on 44 Cooper St (queued contract $376k = `your_mao`, PDF stamped
+  DRAFT/attorney-review). Then **cleaned the 829 synthetic `manual` rows** from live (real deals are `county`).
+- **Mined Max Maxwell's "Wholesaling Fundamentals" masterclass** and mapped it to the funnel; most of it was
+  already encoded. Wrote **`docs/AUTOMATION-PLAN.md`** (4 gaps, keystone-first build order, compliance moat),
+  then built all four gaps (operator chose "all", plan-first):
+  - **Phase A (keystone):** migration `0002_automation` (applied live) + `@parcel/types` — itemized-MAO fields
+    (`holding_costs/closing_costs/buyer_profit_pct`), `underwrites.comp_count`, `messages.kind`,
+    `deals.title_company/closing_date`, and the `closing_tasks` table (+RLS). New columns are
+    **optional+nullable** so no existing literal/insert/fixture broke (zero consumer ripple).
+  - **Phase B (underwriting):** `underwrite()` itemized-MAO branch (his full formula — worked example
+    200k ARV → **$112k MAO** is a test) alongside the 70% rule; new pure `comps.ts` (haversine,
+    `selectComps`, `estimateArvFromComps` with his per-feature adjustments) + `repairs.ts` (condition-tier
+    $/sqft + big-ticket adders). +23 tests.
+  - **Phase C (outreach):** seller drip **3→6 touches** (day 0/3/7/14/21/30), one CTA each, MT broker line,
+    touch-1 link/image-free; messages tagged `kind='seller_outreach'`. (Updated outreach done-when.)
+  - **Phase D (desk):** `CompsProvider`+`MockCompsProvider` wired into `runUnderwriting` (comps-backed ARV,
+    `is_estimate=false`, `comp_count>0`; `/api/pull` uses it) — **mock comps until a real sold-comps source**;
+    buyer-facing **deal-package PDF** (`lib/deal-package.ts` + `/api/deals/[id]/package`, reuses the intake PDF
+    writer) with a deal-page link; `dispatchToBuyers` now **sends CAN-SPAM buyer emails** (suppression-gated,
+    reply-REMOVE opt-out, mock provider until SendGrid) instead of only recording `sent_at`.
+  - **Phase E (closing coordinator):** his 5-phase close as `closing_tasks` + `lib/closing.ts` template,
+    a **Closing coordinator** section on the deal page (seed button, per-task toggles, progress bar) +
+    title-company/closing-date fields.
+- Verified: **8/8 typecheck, 146 tests, desk build green.** Live smoke: deal-package PDF 200/`%PDF` with real
+  numbers; closing seed action created **16 tasks across 5 phases** on live (44 Cooper demo deal).
+- **Compliance held throughout** (no cold contracts, human-click sends, `CONTRACT_TEMPLATE_REVIEWED=false`
+  gate, CAN-SPAM on the new buyer blasts, email-first — no SMS/calls). Cold-calling/SMS stay manual by design.
+- Open: Firecrawl credits (or a real sold-comps source to replace mock comps); SendGrid for real buyer/seller
+  sends; the MT attorney review (the one true hard gate). PRD §6.4 now reflects 6 touches (was 3).

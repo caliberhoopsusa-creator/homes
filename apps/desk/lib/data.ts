@@ -6,6 +6,8 @@ import "server-only";
 import type {
   Buyer,
   BuyerInsert,
+  ClosingTask,
+  ClosingTaskStatus,
   Contract,
   ContractStatus,
   Deal,
@@ -13,11 +15,17 @@ import type {
   Match,
   Owner,
   Property,
+  SmsConsent,
   Underwrite,
 } from "@parcel/types";
+import { closingSeedRows } from "./closing";
+import { consentFromRows, normalizePhone } from "./sms-consent";
+import { underwrite } from "@parcel/underwriting";
+import { makeProvider, configFromEnv } from "@parcel/outreach";
 import { getSupabase, isLive } from "./supabase";
 import { computeMatchRows } from "./match";
 import { nextContractStatus, dealStageForContractStatus } from "./lifecycle";
+import { buildBuyerDispoEmail } from "./buyer-dispatch";
 import * as fx from "./fixtures";
 
 // Mutable in-memory copies so fixture writes persist for the process lifetime.
@@ -29,6 +37,9 @@ const mem = {
   buyers: fx.buyers.map((b) => ({ ...b })) as Buyer[],
   matches: fx.matches.map((m) => ({ ...m })) as Match[],
   contracts: fx.contracts.map((c) => ({ ...c })) as Contract[],
+  closingTasks: [] as ClosingTask[],
+  smsConsents: [] as SmsConsent[],
+  suppressions: [] as string[],
 };
 
 const newId = (prefix: string) =>
@@ -117,6 +128,56 @@ export async function getContract(id: string): Promise<Contract | null> {
   if (!sb) return mem.contracts.find((c) => c.id === id) ?? null;
   const { data } = await sb.from("contracts").select("*").eq("id", id).single();
   return (data as Contract) ?? null;
+}
+
+export async function getOwners(): Promise<Owner[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.owners;
+  const { data } = await sb.from("owners").select("*");
+  return (data as Owner[]) ?? [];
+}
+
+export async function getUnderwrites(): Promise<Underwrite[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.underwrites;
+  const { data } = await sb.from("underwrites").select("*");
+  return (data as Underwrite[]) ?? [];
+}
+
+/** Promote a sourced property into the deal pipeline (idempotent). Returns the deal id. */
+export async function createDealForProperty(
+  propertyId: string,
+): Promise<{ id: string }> {
+  const sb = getSupabase();
+  if (!sb) {
+    const existing = mem.deals.find((d) => d.property_id === propertyId);
+    if (existing) return { id: existing.id };
+    const id = newId("deal");
+    mem.deals.push({
+      id,
+      property_id: propertyId,
+      stage: "Lead",
+      assigned_buyer_id: null,
+      notes: null,
+      title_company: null,
+      closing_date: null,
+      created_at: new Date().toISOString(),
+    });
+    return { id };
+  }
+  const { data: found } = await sb
+    .from("deals")
+    .select("id")
+    .eq("property_id", propertyId)
+    .limit(1);
+  const prior = ((found as { id: string }[]) ?? [])[0];
+  if (prior) return { id: prior.id };
+  const { data } = await sb
+    .from("deals")
+    .insert({ property_id: propertyId, stage: "Lead" })
+    .select("id")
+    .single();
+  return { id: (data as { id: string }).id };
 }
 
 // ── writes ───────────────────────────────────────────────────────────────
@@ -259,9 +320,92 @@ export async function upsertMatchesForDeal(dealId: string): Promise<void> {
 /** Top-N qualifying buyers get the exclusive tier (matches buildDispoPlan's default). */
 const DISPO_TOP_N = 5;
 
+/** True if an email is on the permanent suppression list (CAN-SPAM). */
+export async function isEmailSuppressed(email: string): Promise<boolean> {
+  const e = email.trim().toLowerCase();
+  const sb = getSupabase();
+  if (!sb) return mem.suppressions.includes(e);
+  const { data } = await sb
+    .from("suppressions")
+    .select("email")
+    .eq("email", e)
+    .limit(1);
+  return (((data as { email: string }[]) ?? []).length) > 0;
+}
+
+/** Permanently suppress an email (opt-out). Idempotent. Honors CAN-SPAM opt-outs. */
+export async function suppressEmailAddress(
+  email: string,
+  reason = "unsubscribe",
+): Promise<void> {
+  const e = email.trim().toLowerCase();
+  if (!e) return;
+  const sb = getSupabase();
+  if (!sb) {
+    if (!mem.suppressions.includes(e)) mem.suppressions.push(e);
+    return;
+  }
+  await sb.from("suppressions").upsert({ email: e, reason }, { onConflict: "email" });
+}
+
+// Send the compliant buyer-disposition email to each target buyer (mock provider
+// until SendGrid). Suppression is a HARD gate; the deal-package link points the
+// buyer at the full CMA. The deal's numbers come from the canonical underwrite().
+async function sendDispoEmails(dealId: string, buyerIds: string[]): Promise<void> {
+  const deal = await getDeal(dealId);
+  if (!deal?.property_id) return;
+  const [property, uw, buyers] = await Promise.all([
+    getProperty(deal.property_id),
+    getUnderwriteForProperty(deal.property_id),
+    getBuyers(),
+  ]);
+  if (!property) return;
+
+  const live = underwrite({
+    arv: uw?.arv ?? property.est_value ?? 0,
+    repairs: uw?.repairs ?? 0,
+    asking: property.asking ?? 0,
+    rulePct: uw?.rule_pct,
+    feeTarget: uw?.fee_target,
+  });
+
+  const cfg = configFromEnv();
+  const provider = makeProvider();
+  const base = process.env.APP_BASE_URL ?? "http://localhost:3000";
+  const packageUrl = `${base}/api/deals/${dealId}/package`;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? cfg.replyTo;
+
+  const targets = buyers.filter((b) => buyerIds.includes(b.id) && b.email);
+  for (const b of targets) {
+    const email = b.email!.trim();
+    if (!email || (await isEmailSuppressed(email))) continue;
+    const { subject, body } = buildBuyerDispoEmail({
+      buyerName: b.name,
+      address: property.address,
+      city: property.city,
+      beds: property.beds,
+      baths: property.baths,
+      sqft: property.sqft,
+      arv: live.arv,
+      repairs: live.repairs,
+      buyerCeiling: live.buyerCeiling,
+      packageUrl,
+      mailingAddress: cfg.mailingAddress,
+    });
+    await provider.send({
+      to: email,
+      from: fromEmail,
+      fromName: cfg.fromName,
+      replyTo: cfg.replyTo,
+      subject,
+      body,
+    });
+  }
+}
+
 // Disposition dispatch: send a deal to its exclusive (top-N qualifying) or blast
-// tier, recording matches.sent_at. (When live, this is where buyer emails would
-// queue via the outreach engine; for now it records the dispatch.) Returns count.
+// tier — emails the buyers a compliant deal alert (suppression-gated) AND records
+// matches.sent_at. Returns the count dispatched.
 export async function dispatchToBuyers(
   dealId: string,
   tier: "exclusive" | "blast",
@@ -275,6 +419,9 @@ export async function dispatchToBuyers(
     : qualifying.slice(DISPO_TOP_N);
   const ids = targets.map((m) => m.buyer_id);
   if (ids.length === 0) return 0;
+
+  // Email the buyers (CAN-SPAM-compliant, suppression-checked) before recording.
+  await sendDispoEmails(dealId, ids);
 
   const at = new Date().toISOString();
   const sb = getSupabase();
@@ -333,6 +480,155 @@ export async function assignDealToBuyer(
     buyer_id: buyerId,
     offer_price: offer,
     status: "queued",
+  });
+}
+
+// ── closing coordinator ────────────────────────────────────────────────────
+export async function getClosingTasks(dealId: string): Promise<ClosingTask[]> {
+  const sb = getSupabase();
+  if (!sb) {
+    return mem.closingTasks
+      .filter((t) => t.deal_id === dealId)
+      .sort((a, b) => a.sort - b.sort);
+  }
+  const { data } = await sb
+    .from("closing_tasks")
+    .select("*")
+    .eq("deal_id", dealId)
+    .order("sort", { ascending: true });
+  return (data as ClosingTask[]) ?? [];
+}
+
+/** Seed the 5-phase checklist for a deal (idempotent — no-op if tasks exist). */
+export async function seedClosingTasks(dealId: string): Promise<number> {
+  const existing = await getClosingTasks(dealId);
+  if (existing.length > 0) return 0;
+  const rows = closingSeedRows(dealId);
+
+  const sb = getSupabase();
+  if (!sb) {
+    const now = new Date().toISOString();
+    for (const r of rows) {
+      mem.closingTasks.push({
+        id: newId("ct"),
+        deal_id: r.deal_id,
+        phase: r.phase,
+        label: r.label,
+        status: "pending",
+        sort: r.sort,
+        due_at: null,
+        done_at: null,
+        created_at: now,
+      });
+    }
+    return rows.length;
+  }
+  await sb.from("closing_tasks").insert(rows);
+  return rows.length;
+}
+
+export async function setClosingTaskStatus(
+  id: string,
+  status: ClosingTaskStatus,
+): Promise<void> {
+  const doneAt = status === "done" ? new Date().toISOString() : null;
+  const sb = getSupabase();
+  if (!sb) {
+    const t = mem.closingTasks.find((x) => x.id === id);
+    if (t) {
+      t.status = status;
+      t.done_at = doneAt;
+    }
+    return;
+  }
+  await sb.from("closing_tasks").update({ status, done_at: doneAt }).eq("id", id);
+}
+
+/** Update a deal's closing-coordination fields (title company, closing date). */
+export async function updateDealClosing(
+  dealId: string,
+  fields: { title_company?: string | null; closing_date?: string | null },
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) {
+    const d = mem.deals.find((x) => x.id === dealId);
+    if (d) Object.assign(d, fields);
+    return;
+  }
+  await sb.from("deals").update(fields).eq("id", dealId);
+}
+
+// ── SMS consent (TCPA) ──────────────────────────────────────────────────────
+async function consentRowsForPhone(phone: string): Promise<SmsConsent[]> {
+  const norm = normalizePhone(phone);
+  const sb = getSupabase();
+  if (!sb) return mem.smsConsents.filter((c) => c.phone === norm);
+  const { data } = await sb.from("sms_consents").select("*").eq("phone", norm);
+  return (data as SmsConsent[]) ?? [];
+}
+
+/** True only if the contact has an active, non-revoked opt-in on file. */
+export async function hasSmsConsent(phone: string): Promise<boolean> {
+  return consentFromRows(await consentRowsForPhone(phone));
+}
+
+/** Record an opt-in (documented consent). */
+export async function recordSmsConsent(input: {
+  phone: string;
+  source: string;
+  ownerId?: string | null;
+  buyerId?: string | null;
+}): Promise<void> {
+  const phone = normalizePhone(input.phone);
+  const now = new Date().toISOString();
+  const sb = getSupabase();
+  if (!sb) {
+    mem.smsConsents.push({
+      id: newId("sms"),
+      phone,
+      consented: true,
+      source: input.source,
+      owner_id: input.ownerId ?? null,
+      buyer_id: input.buyerId ?? null,
+      consented_at: now,
+      revoked_at: null,
+      created_at: now,
+    });
+    return;
+  }
+  await sb.from("sms_consents").insert({
+    phone,
+    consented: true,
+    source: input.source,
+    owner_id: input.ownerId ?? null,
+    buyer_id: input.buyerId ?? null,
+  });
+}
+
+/** Honor a STOP: record an opt-out event that revokes consent for this phone. */
+export async function revokeSmsConsent(phone: string, source = "STOP"): Promise<void> {
+  const norm = normalizePhone(phone);
+  const now = new Date().toISOString();
+  const sb = getSupabase();
+  if (!sb) {
+    mem.smsConsents.push({
+      id: newId("sms"),
+      phone: norm,
+      consented: false,
+      source,
+      owner_id: null,
+      buyer_id: null,
+      consented_at: null,
+      revoked_at: now,
+      created_at: now,
+    });
+    return;
+  }
+  await sb.from("sms_consents").insert({
+    phone: norm,
+    consented: false,
+    source,
+    revoked_at: now,
   });
 }
 

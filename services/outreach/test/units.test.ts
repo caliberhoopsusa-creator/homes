@@ -59,9 +59,9 @@ function owner(o: Partial<Owner> = {}): Owner {
 }
 
 describe("sequence", () => {
-  it("has exactly 3 touches at day 0 / 3 / 7", () => {
-    expect(SEQUENCE.map((s) => s.step)).toEqual([1, 2, 3]);
-    expect(SEQUENCE.map((s) => s.dayOffset)).toEqual([0, 3, 7]);
+  it("has exactly 6 touches at day 0 / 3 / 7 / 14 / 21 / 30", () => {
+    expect(SEQUENCE.map((s) => s.step)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(SEQUENCE.map((s) => s.dayOffset)).toEqual([0, 3, 7, 14, 21, 30]);
   });
 
   it("touch 1 is plain-text only (no links/images in template body)", () => {
@@ -107,7 +107,7 @@ describe("sequence", () => {
   });
 
   it("stepTemplate throws on an unknown step", () => {
-    expect(() => stepTemplate(4)).toThrow();
+    expect(() => stepTemplate(7)).toThrow();
   });
 });
 

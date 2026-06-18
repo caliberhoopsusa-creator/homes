@@ -83,4 +83,64 @@ describe("underwrite() — the 70% math", () => {
     expect(r.buyerCeiling).toBe(-20_000);
     expect(r.verdict).toBe("pass");
   });
+
+  it("defaults to 70% mode when no itemized inputs are given", () => {
+    const r = underwrite({ arv: 300_000, repairs: 40_000, asking: 150_000 });
+    expect(r.mode).toBe("rule70");
+  });
+});
+
+describe("underwrite() — itemized MAO (Max's full formula)", () => {
+  it("switches to itemized mode when buyerProfitPct is provided", () => {
+    const r = underwrite({
+      arv: 200_000,
+      repairs: 40_000,
+      asking: 100_000,
+      holdingCosts: 3_000,
+      closingCosts: 5_000,
+      buyerProfitPct: 0.15,
+    });
+    expect(r.mode).toBe("itemized");
+  });
+
+  it("computes buyerCeiling = arv - repairs - holding - closing - arv*profitPct", () => {
+    const r = underwrite({
+      arv: 200_000,
+      repairs: 40_000,
+      asking: 100_000,
+      holdingCosts: 3_000,
+      closingCosts: 5_000,
+      buyerProfitPct: 0.15,
+    });
+    // 200k - 40k - 3k - 5k - 30k = 122k
+    expect(r.buyerCeiling).toBe(122_000);
+    // mao = 122k - 10k(default fee) = 112k  (matches the masterclass worked example)
+    expect(r.yourMao).toBe(112_000);
+    // fee = 122k - 100k = 22k -> clear
+    expect(r.feePotential).toBe(22_000);
+    expect(r.verdict).toBe("clear");
+  });
+
+  it("treats missing holding/closing as 0 in itemized mode", () => {
+    const r = underwrite({
+      arv: 200_000,
+      repairs: 40_000,
+      asking: 100_000,
+      buyerProfitPct: 0.15,
+    });
+    // 200k - 40k - 0 - 0 - 30k = 130k
+    expect(r.buyerCeiling).toBe(130_000);
+  });
+
+  it("buyerProfitPct = 0 still triggers itemized mode (presence, not truthiness)", () => {
+    const r = underwrite({
+      arv: 200_000,
+      repairs: 40_000,
+      asking: 100_000,
+      buyerProfitPct: 0,
+    });
+    expect(r.mode).toBe("itemized");
+    // 200k - 40k - 0 = 160k
+    expect(r.buyerCeiling).toBe(160_000);
+  });
 });

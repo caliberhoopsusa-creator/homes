@@ -9,5 +9,5 @@ modules ONLY through the Postgres tables (PRD §5). **Never edit another module.
 - Market *an offer to buy*, never *the property for sale* (MT broker line).
 - Externals (SendGrid, Anthropic, DB) sit behind injected interfaces — mock default, keys via
   env, no secrets in source.
-- **Done when (PRD §6.4):** 3 touches, suppression honored, daily cap respected, `messages`
-  rows logged queued→sent. Don't gold-plate.
+- **Done when (PRD §6.4, extended per docs/AUTOMATION-PLAN.md):** 6 touches (day 0/3/7/14/21/30),
+  suppression honored, daily cap respected, `messages` rows logged queued→sent. Don't gold-plate.
