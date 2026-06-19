@@ -37,9 +37,14 @@ interfaces + provision Supabase.
   activity KPIs (leads, emails, replies → interested, offers, under-contract → buyers, assigned, fees
   earned) — the book's operating-system dashboard, live-refreshing.
 - **Command Center redesign** (`app/page.tsx` + `page.module.css`): the home page is now a dark
-  "cadastral survey terminal" — Fraunces + JetBrains Mono, hairline section-grid, survey-tick corners,
-  amber-money/green-go signals, an animated money dial, and a hot-leads readout. Reuses every real
-  data source + link; orchestrated staggered load with full prefers-reduced-motion fallback.
+  "cadastral survey terminal" — hairline section-grid, survey-tick corners, amber-money/green-go
+  signals, an animated money dial, and a hot-leads readout. Reuses every real data source + link;
+  orchestrated staggered load with full prefers-reduced-motion fallback.
+- **Site-wide JARVIS HUD theme** (`globals.css` + `layout.tsx` + `Header.tsx`): the whole desk is now
+  a dark holographic command interface. Global type = Chakra Petch (display) + JetBrains Mono. Themed
+  by REMAPPING the light Tailwind palette → HUD tokens in one place (cyan primary, amber money, green
+  go, red danger on a blue-black grid backdrop) + chrome (viewport corner brackets, scanline sweep,
+  glow, cyan focus rings). No per-page rewrite; all 10 routes verified 200 on the dev server.
 - **Autopilot** (`/api/cron`, `vercel.json` daily) runs the funnel hands-off: pull → score →
   skip-trace → underwrite → send the *due* outreach touch per owner (cadence-aware, no re-spam).
   Only human action left = the one-click contract approval. Enable by deploying + setting `CRON_SECRET`.

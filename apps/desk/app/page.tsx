@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { Fraunces, JetBrains_Mono } from "next/font/google";
 import type { DealStage, Underwrite } from "@parcel/types";
 import { getDealViews } from "@/lib/views";
 import { getDeals, getProperties, getUnderwrites, isLive } from "@/lib/data";
@@ -11,9 +10,6 @@ import { usd } from "@/lib/format";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
-
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 const MONTHLY_GOAL = 10_000;
 const FARM = { label: "MISSOULA · MONTANA", lat: 46.8721, lng: -113.994 };
@@ -96,7 +92,7 @@ export default async function HomePage() {
   const off = C * (1 - pct / 100);
 
   return (
-    <div className={`${display.variable} ${mono.variable} ${styles.root}`}>
+    <div className={styles.root}>
       <RealtimeBoundary tables={["deals", "contracts", "properties"]} />
 
       <div className={styles.slab}>
