@@ -13,8 +13,10 @@ import type {
   Deal,
   DealStage,
   Match,
+  Message,
   Owner,
   Property,
+  Reply,
   SmsConsent,
   Underwrite,
 } from "@parcel/types";
@@ -40,6 +42,8 @@ const mem = {
   closingTasks: [] as ClosingTask[],
   smsConsents: [] as SmsConsent[],
   suppressions: [] as string[],
+  messages: [] as Message[],
+  replies: [] as Reply[],
 };
 
 const newId = (prefix: string) =>
@@ -142,6 +146,20 @@ export async function getUnderwrites(): Promise<Underwrite[]> {
   if (!sb) return mem.underwrites;
   const { data } = await sb.from("underwrites").select("*");
   return (data as Underwrite[]) ?? [];
+}
+
+export async function getMessages(): Promise<Message[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.messages;
+  const { data } = await sb.from("messages").select("*");
+  return (data as Message[]) ?? [];
+}
+
+export async function getReplies(): Promise<Reply[]> {
+  const sb = getSupabase();
+  if (!sb) return mem.replies;
+  const { data } = await sb.from("replies").select("*");
+  return (data as Reply[]) ?? [];
 }
 
 /** Promote a sourced property into the deal pipeline (idempotent). Returns the deal id. */

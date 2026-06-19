@@ -7,7 +7,15 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "./supabase";
 
-type Table = "deals" | "contracts" | "buyers" | "matches";
+export type RealtimeTable =
+  | "deals"
+  | "contracts"
+  | "buyers"
+  | "matches"
+  | "properties"
+  | "messages"
+  | "replies";
+type Table = RealtimeTable;
 
 /**
  * Subscribe to postgres changes on a table and refresh the route on any event.

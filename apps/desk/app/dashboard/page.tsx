@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DashboardPanel } from "@/components/DashboardPanel";
+import { Scoreboards } from "@/components/Scoreboards";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,9 @@ export const dynamic = "force-dynamic";
 export default function DashboardPage() {
   return (
     <div className="space-y-4">
-      <RealtimeBoundary tables={["deals", "contracts"]} />
+      <RealtimeBoundary
+        tables={["deals", "contracts", "properties", "messages", "replies"]}
+      />
       <div>
         <Link href="/" className="text-sm text-blue-600 hover:underline">
           ← Back to Home
@@ -22,6 +25,7 @@ export default function DashboardPage() {
         </p>
       </div>
       <DashboardPanel />
+      <Scoreboards />
     </div>
   );
 }
