@@ -36,6 +36,10 @@ interfaces + provision Supabase.
 - **Three scoreboards** (`lib/scoreboards.ts` + dashboard): Marketing / Acquisitions / Dispositions
   activity KPIs (leads, emails, replies → interested, offers, under-contract → buyers, assigned, fees
   earned) — the book's operating-system dashboard, live-refreshing.
+- **Command Center redesign** (`app/page.tsx` + `page.module.css`): the home page is now a dark
+  "cadastral survey terminal" — Fraunces + JetBrains Mono, hairline section-grid, survey-tick corners,
+  amber-money/green-go signals, an animated money dial, and a hot-leads readout. Reuses every real
+  data source + link; orchestrated staggered load with full prefers-reduced-motion fallback.
 - **Autopilot** (`/api/cron`, `vercel.json` daily) runs the funnel hands-off: pull → score →
   skip-trace → underwrite → send the *due* outreach touch per owner (cadence-aware, no re-spam).
   Only human action left = the one-click contract approval. Enable by deploying + setting `CRON_SECRET`.
