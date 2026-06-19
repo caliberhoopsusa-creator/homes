@@ -7,13 +7,11 @@
 // risk). Those domains are hard-denied below; an optional allowlist narrows
 // further. Not exercised live in tests; it is a faithful, typed integration.
 import type { RadiusPullRequest, PropertyCandidate } from "@parcel/types";
+import { isPermitted } from "@parcel/scrape/compliance";
 import type { PropertyProvider } from "../provider.js";
 import { normalizeDistress } from "../normalize.js";
 
 const FIRECRAWL_SEARCH_URL = "https://api.firecrawl.dev/v2/search";
-
-/** Domains we must never scrape (ToS). Checked against each result URL. */
-const DENY_DOMAINS = ["zillow.com", "redfin.com", "trulia.com", "realtor.com"];
 
 // The structured shape we ask Firecrawl to extract from each result page.
 interface ExtractedProperty {
@@ -133,19 +131,6 @@ function extractResults(json: FirecrawlSearchResponse): FirecrawlSearchResult[] 
   const data = json.data;
   if (Array.isArray(data)) return data;
   return data?.web ?? [];
-}
-
-/** True unless the host is on the denylist (and, if an allowlist exists, on it). */
-function isPermitted(url: string, allow: string[]): boolean {
-  let host: string;
-  try {
-    host = new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return false;
-  }
-  if (DENY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) return false;
-  if (allow.length > 0) return allow.some((d) => host === d || host.endsWith(`.${d}`));
-  return true;
 }
 
 function mapResult(r: FirecrawlSearchResult, req: RadiusPullRequest): PropertyCandidate | null {

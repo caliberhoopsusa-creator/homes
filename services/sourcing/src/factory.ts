@@ -5,10 +5,11 @@ import type { PropertyProvider } from "./provider.js";
 import { MockProvider } from "./providers/mock.js";
 import { BatchDataProvider } from "./providers/batchdata.js";
 import { FirecrawlProvider } from "./providers/firecrawl.js";
+import { ScrapeProvider } from "./providers/scrape.js";
 import { CountyRecordsProvider } from "./providers/county.js";
 import { CachingProvider, type CacheOptions } from "./cache.js";
 
-export type ProviderName = "mock" | "batchdata" | "firecrawl" | "county";
+export type ProviderName = "mock" | "batchdata" | "firecrawl" | "scrape" | "county";
 
 export interface FactoryOptions {
   /** Override the env selection. */
@@ -30,6 +31,9 @@ export function createProvider(opts: FactoryOptions = {}): PropertyProvider {
     case "firecrawl":
       base = new FirecrawlProvider();
       break;
+    case "scrape":
+      base = new ScrapeProvider();
+      break;
     case "county":
       base = new CountyRecordsProvider();
       break;
@@ -38,7 +42,7 @@ export function createProvider(opts: FactoryOptions = {}): PropertyProvider {
       break;
     default:
       throw new Error(
-        `Unknown PROPERTY_PROVIDER "${name}" (expected "mock", "batchdata", "firecrawl", or "county")`,
+        `Unknown PROPERTY_PROVIDER "${name}" (expected "mock", "batchdata", "firecrawl", "scrape", or "county")`,
       );
   }
 

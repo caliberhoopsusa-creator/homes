@@ -7,6 +7,7 @@ export type PropertySource =
   | "attom"
   | "batchdata"
   | "firecrawl"
+  | "scrape"
   | "county"
   | "manual";
 export type SkiptraceStatus = "pending" | "matched" | "none";

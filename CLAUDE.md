@@ -33,6 +33,7 @@ Verify: `pnpm -r typecheck && pnpm -r test`.
 ```
 packages/types   KEYSTONE: shared types + zod schemas (read-mostly)
 packages/db      Supabase client + Postgres store impls (wiring layer)
+packages/scrape  self-hosted Firecrawl-like scrape engine (compliance denylist lives here)
 supabase/migrations   the schema (Phase 0, blocks everything)
 services/{sourcing,skiptrace,underwriting,outreach,intake}   one concern each
 apps/desk        Next.js operator cockpit

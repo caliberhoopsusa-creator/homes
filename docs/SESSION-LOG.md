@@ -25,8 +25,8 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **110 tests pass** (underwriting 15, sourcing 32,
-  skiptrace 12, outreach 22, intake 15, desk 14); the Next.js desk builds. Live DB = `homes`.
+- **9 workspace projects** typecheck clean; **147 tests pass** (underwriting 15, sourcing 34,
+  skiptrace 14, outreach 22, intake 15, desk 14, scrape 33); the Next.js desk builds. Live DB = `homes`.
 - Funnel: `sourcing → skiptrace → underwriting → outreach → intake (gated contract) → desk`.
 - Verify everything: `pnpm install && pnpm -r typecheck && pnpm -r test && pnpm --filter @parcel/desk build`.
 - **Domain knowledge:** `docs/RESEARCH-wholesaling.md` is the pro playbook (deep research). Build-affecting
@@ -217,6 +217,31 @@ Ship a 5-line README + a tight CLAUDE.md. Stay within the PRD §6 "done when" �
 ---
 
 ## 10. Per-session changelog
+
+### Session 8 — 2026-06-19 (self-hosted scrape engine — `@parcel/scrape`)
+- **New shared package `packages/scrape` (`@parcel/scrape`)** — a self-hosted, Firecrawl-shaped
+  crawl + structured-extraction engine with **NO paid API** (user asked for "a Zillow + website
+  scraper like Firecrawl"; Zillow scraping is a hard rule — built the compliant version instead,
+  user-confirmed via AskUserQuestion: compliant sources only · self-hosted engine · funnel-only).
+  - `ScrapeEngine` seam (`scrape`/`search`/`crawl`/`batchScrape` → `ScrapeResult{url,markdown,html?,json?}`).
+    `MockScrapeEngine` = keyless default; `SelfHostedScrapeEngine` opts in via `SCRAPE_ENGINE=selfhosted`
+    (injected `fetch`, UA, timeout, retry/backoff, per-host rate-limit, robots.txt, depth/page-capped BFS crawl).
+  - `compliance.ts` = **single source of truth** for the Zillow/Redfin/Trulia/Realtor denylist (was
+    duplicated in both Firecrawl providers) + robots parse — enforced at the engine boundary so no caller
+    can bypass. Refactored `services/{sourcing,skiptrace}/providers/firecrawl.ts` to import it.
+  - `Extractor` seam: `MockExtractor` (deterministic regex heuristics, default) | `AnthropicExtractor`
+    (reuses `ANTHROPIC_API_KEY`), selected by `SCRAPE_EXTRACTOR`. Pure `html-to-markdown` (no DOM dep).
+  - Self-hosted `search()` hits a configurable JSON endpoint (`SCRAPE_SEARCH_URL`, e.g. SearXNG) — stays
+    self-hosted, no vendor lock-in.
+- **Keystone change:** added `"scrape"` to `PropertySource` (`database.types.ts`) + the `propertyCandidate`
+  source enum (`schemas.ts`). Re-checked all consumers → compile clean.
+- **Wired into the funnel:** `services/sourcing` + `services/skiptrace` each got a `ScrapeProvider`
+  (`PROPERTY_PROVIDER=scrape`), registered in their factories, mapping engine results → `PropertyCandidate` /
+  `OwnerHit`. Added `@parcel/scrape` to the desk's `transpilePackages`.
+- **Env:** `.env.example` gains the `SCRAPE_*` block; `PROPERTY_PROVIDER` now lists `scrape`.
+- Verified: **9/9 typecheck**, **147 tests** (scrape +33, sourcing 32→34, skiptrace 12→14; was 110), desk builds.
+- Compliance posture is *stronger* than before: denylist is now centralized + boundary-enforced, plus
+  robots.txt and polite rate-limiting. Still no Zillow/Redfin/Trulia/Realtor (PRD §8.4 hard rule held).
 
 ### Session 1 — 2026-06-16 (greenfield → full funnel + wiring + Firecrawl)
 - Built Phase 0 keystone, Phase 1 (underwriting, sourcing, skiptrace, outreach, desk),

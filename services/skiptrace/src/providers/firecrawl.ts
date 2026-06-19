@@ -6,10 +6,10 @@
 //
 // COMPLIANCE: respect provider ToS (PRD §8.4). Zillow/Redfin et al. are denied.
 import type { Property, OwnerHit } from "@parcel/types";
+import { isPermitted } from "@parcel/scrape/compliance";
 import type { SkipTraceProvider } from "../provider.js";
 
 const FIRECRAWL_SEARCH_URL = "https://api.firecrawl.dev/v2/search";
-const DENY_DOMAINS = ["zillow.com", "redfin.com", "trulia.com", "realtor.com"];
 
 interface ExtractedOwner {
   full_name?: string;
@@ -80,7 +80,7 @@ export class FirecrawlProvider implements SkipTraceProvider {
     }
 
     const json = (await res.json()) as FirecrawlResponse;
-    const results = extractResults(json).filter((r) => isPermitted(r.url));
+    const results = extractResults(json).filter((r) => !!r.url && isPermitted(r.url));
 
     // Take the first result that yields at least a name or an email.
     for (const r of results) {
@@ -104,17 +104,6 @@ function extractResults(json: FirecrawlResponse): FirecrawlResult[] {
   const data = json.data;
   if (Array.isArray(data)) return data;
   return data?.web ?? [];
-}
-
-function isPermitted(url: string | undefined): boolean {
-  if (!url) return false;
-  let host: string;
-  try {
-    host = new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return false;
-  }
-  return !DENY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
 }
 
 function mapOwner(e: ExtractedOwner, property: Property, base: number): OwnerHit {

@@ -6,6 +6,7 @@ const nextConfig = {
   // and the service interfaces @parcel/db pulls in). All must be transpiled.
   transpilePackages: [
     "@parcel/types",
+    "@parcel/scrape",
     "@parcel/underwriting",
     "@parcel/sourcing",
     "@parcel/skiptrace",
