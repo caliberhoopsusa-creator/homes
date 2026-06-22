@@ -39,6 +39,9 @@ interfaces + provision Supabase.
   and the desk Leads list — underwriting plateaued at exactly 1000. Added `fetchAll()` (pages via
   `.range`) in `packages/db/util` and applied it across the sourcing/skiptrace/underwrite/outreach
   stores + the desk's `getProperties/getOwners/getUnderwrites`. Now all rows are seen.
+- **`/api/underwrite`** route: runs underwriting-only (the 70%/comps math on every un-underwritten
+  property), independent of the slow skip-trace in `/api/pull`. Used to top off offer numbers — live
+  DB now has **all 1,195 properties underwritten** (5 clear / 1,190 pass; raw absentee data, no comps).
 - Earlier in this session the live DB was wiped of demo/test rows (6 deals, 1 contract, 6 matches,
   16 messages, 3 demo buyers) — real property/owner/underwrite leads kept. Desk starts clean.
 - **Money math = EARNED vs IN-THE-WORKS** (fixed a confusing display): "Pace to $10k" used to sum
