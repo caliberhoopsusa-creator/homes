@@ -7,7 +7,7 @@ import { scoreLead } from "@/lib/scoring";
 import { buildBrief } from "@/lib/brief";
 
 const GOAL = 10_000;
-const CLEARING: DealStage[] = ["Under contract", "Assigned", "Closed"];
+const IN_PROGRESS: DealStage[] = ["Under contract", "Assigned"];
 
 const isThisMonth = (iso: string): boolean => {
   const d = new Date(iso);
@@ -39,8 +39,14 @@ export async function Brief() {
   ).length;
   const topStep = [...items].sort((a, b) => a.priority - b.priority)[0]?.step ?? null;
 
-  const monthFee = views
-    .filter((v) => CLEARING.includes(v.deal.stage) && isThisMonth(v.deal.created_at))
+  // Earned = closed deals this month (money in the bank). Projected = deals
+  // still in progress (real potential, not earned yet) — kept separate so a
+  // number can't read as money you already have.
+  const earned = views
+    .filter((v) => v.deal.stage === "Closed" && isThisMonth(v.deal.created_at))
+    .reduce((sum, v) => sum + (v.underwrite?.fee_potential ?? 0), 0);
+  const projected = views
+    .filter((v) => IN_PROGRESS.includes(v.deal.stage))
     .reduce((sum, v) => sum + (v.underwrite?.fee_potential ?? 0), 0);
 
   const dealPropIds = new Set(deals.map((d) => d.property_id));
@@ -64,7 +70,8 @@ export async function Brief() {
     hotLeads,
     needsYou,
     contractsToApprove,
-    monthFee,
+    monthFee: earned,
+    projected,
     goal: GOAL,
     topStep,
   });

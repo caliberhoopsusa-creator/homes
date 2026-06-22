@@ -7,9 +7,12 @@ import { Term } from "@/components/Term";
 const MONTHLY_GOAL = 10_000; // CLAUDE.md: net $10k/month (~one $10k assignment)
 const TARGET_FEE = 10_000; // research-backed planning fee (docs/RESEARCH-wholesaling.md)
 
-// Deals whose fee counts toward "money in motion this month": those that have
-// cleared the human gate (under contract → assigned → closed).
-const CLEARING_STAGES: DealStage[] = ["Under contract", "Assigned", "Closed"];
+// EARNED = money actually in the bank: only deals that have CLOSED.
+// IN THE WORKS = projected fees from deals still mid-flight (under contract /
+// assigned) — real potential, but NOT yet earned, so it never counts toward the
+// goal. Keeping these separate is the honest answer to "why does it say $14k
+// when I haven't closed anything?".
+const IN_PROGRESS_STAGES: DealStage[] = ["Under contract", "Assigned"];
 
 function isThisMonth(iso: string): boolean {
   const d = new Date(iso);
@@ -22,40 +25,43 @@ function isThisMonth(iso: string): boolean {
 export async function DashboardPanel() {
   const views = await getDealViews();
 
-  const clearingThisMonth = views.filter(
-    (v) =>
-      CLEARING_STAGES.includes(v.deal.stage) && isThisMonth(v.deal.created_at),
-  );
+  const feeOf = (v: (typeof views)[number]) => v.underwrite?.fee_potential ?? 0;
 
-  const monthFee = clearingThisMonth.reduce(
-    (sum, v) => sum + (v.underwrite?.fee_potential ?? 0),
-    0,
+  // Earned this month = closed deals only (money in the bank).
+  const closedThisMonth = views.filter(
+    (v) => v.deal.stage === "Closed" && isThisMonth(v.deal.created_at),
   );
+  const earned = closedThisMonth.reduce((sum, v) => sum + feeOf(v), 0);
 
-  const totalDeals = views.length;
+  // In the works = projected fees from deals still mid-flight (not earned yet).
+  const inProgress = views.filter((v) =>
+    IN_PROGRESS_STAGES.includes(v.deal.stage),
+  );
+  const projected = inProgress.reduce((sum, v) => sum + feeOf(v), 0);
+
   const clearVerdicts = views.filter(
     (v) => v.underwrite?.verdict === "clear",
   ).length;
-  const pct = Math.min(100, Math.round((monthFee / MONTHLY_GOAL) * 100));
-  const dealsToGoal = Math.max(0, Math.ceil((MONTHLY_GOAL - monthFee) / TARGET_FEE));
+  const pct = Math.min(100, Math.round((earned / MONTHLY_GOAL) * 100));
+  const dealsToGoal = Math.max(0, Math.ceil((MONTHLY_GOAL - earned) / TARGET_FEE));
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Metric
-          label="Pace to $10k (this month)"
-          value={usd(monthFee)}
-          sub={`${pct}% of goal`}
+          label="Earned this month"
+          value={usd(earned)}
+          sub={earned > 0 ? `${pct}% of goal` : "from closed deals"}
         />
         <Metric
-          label="Clearing deals (mo.)"
-          value={String(clearingThisMonth.length)}
-          sub="under contract+"
+          label="In the works (projected)"
+          value={usd(projected)}
+          sub={`${inProgress.length} deal${inProgress.length === 1 ? "" : "s"} not closed yet`}
         />
         <Metric
-          label="Total deals"
-          value={String(totalDeals)}
-          sub="broker-line pacing"
+          label="Closed deals (mo.)"
+          value={String(closedThisMonth.length)}
+          sub="fee earned"
         />
         <Metric
           label={<Term k="verdict">Clear verdicts</Term>}

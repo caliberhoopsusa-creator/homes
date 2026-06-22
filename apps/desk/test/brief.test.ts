@@ -40,12 +40,26 @@ describe("buildBrief", () => {
     expect(b.doFirst).toBe("Find a buyer for 44 Cooper St.");
   });
 
-  it("reports progress to the goal as a percentage", () => {
+  it("reports EARNED money as a percentage of the goal", () => {
     const b = buildBrief({ ...base, monthFee: 4200 });
-    expect(b.summary).toMatch(/42% to this month/i);
+    expect(b.summary).toMatch(/earned \$4,200/i);
+    expect(b.summary).toMatch(/42% of the \$10,000 goal/i);
   });
 
-  it("shows a start-of-month message when no fee yet", () => {
+  it("shows a start-of-month message when nothing earned and nothing in progress", () => {
     expect(buildBrief(base).summary).toMatch(/start of the month/i);
+  });
+
+  it("never counts in-progress deals as earned — explains they're not closed", () => {
+    const b = buildBrief({ ...base, monthFee: 0, projected: 14000 });
+    expect(b.summary).toMatch(/haven't closed a deal yet/i);
+    expect(b.summary).toMatch(/\$14,000 is in the works/i);
+    expect(b.summary).not.toMatch(/earned \$14,000/i);
+  });
+
+  it("shows earned plus a separate in-the-works figure", () => {
+    const b = buildBrief({ ...base, monthFee: 5000, projected: 14000 });
+    expect(b.summary).toMatch(/earned \$5,000/i);
+    expect(b.summary).toMatch(/\$14,000 is in the works/i);
   });
 });

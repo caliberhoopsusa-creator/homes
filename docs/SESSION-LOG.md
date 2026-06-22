@@ -25,8 +25,12 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **210 tests pass** (underwriting 40, sourcing 41,
-  skiptrace 12, outreach 43, intake 15, desk 59); the Next.js desk builds. Live DB = `homes`.
+- **8 workspace projects** typecheck clean; **212 tests pass** (underwriting 40, sourcing 41,
+  skiptrace 12, outreach 43, intake 15, desk 61); the Next.js desk builds. Live DB = `homes`.
+- **Money math = EARNED vs IN-THE-WORKS** (fixed a confusing display): "Pace to $10k" used to sum
+  *projected* fees of Under-contract/Assigned deals → showed e.g. $14k with nothing closed. Now the
+  goal counts **only closed deals** (money earned); in-progress projected fees show as a separate,
+  clearly-labeled "In the works" figure. Dashboard + the Home briefing both say it plainly.
 - **List-stacking** in `runPull`: the same address from multiple free lists collapses into ONE
   property carrying the union of distress signals (cross-source dedupe by normalized address) —
   no duplicate rows, and the motivation score reflects the full stack.

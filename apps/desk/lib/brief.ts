@@ -10,8 +10,10 @@ export interface BriefInput {
   needsYou: number;
   /** Draft contracts waiting for your one-click approval. */
   contractsToApprove: number;
-  /** Fee earned/locked toward this month's goal, in dollars. */
+  /** Money actually EARNED this month (closed deals only), in dollars. */
   monthFee: number;
+  /** Projected fees from deals still in progress (not earned yet), in dollars. */
+  projected?: number;
   /** The monthly money goal, in dollars. */
   goal: number;
   /** The single most important next step, in plain English (from computeNextAction). */
@@ -34,6 +36,7 @@ const plural = (n: number, one: string, many: string): string =>
  */
 export function buildBrief(input: BriefInput): Brief {
   const { hotLeads, needsYou, contractsToApprove, monthFee, goal, topStep } = input;
+  const projected = input.projected ?? 0;
   const pct = goal > 0 ? Math.min(100, Math.round((monthFee / goal) * 100)) : 0;
 
   // Inventory sentence — only mention what's actually there.
@@ -49,10 +52,18 @@ export function buildBrief(input: BriefInput): Brief {
       ? "Nothing is waiting on you right now."
       : `You have ${joinList(parts)}.`;
 
-  const money =
-    monthFee > 0
-      ? ` You're ${pct}% to this month's ${usd(goal)} goal (${usd(monthFee)} so far).`
-      : ` You're at the start of the month — ${usd(goal)} to go.`;
+  // Money sentence — be precise about EARNED vs in-the-works so a number can
+  // never be mistaken for money you already have.
+  let money: string;
+  if (monthFee > 0) {
+    money = ` You've earned ${usd(monthFee)} this month — ${pct}% of the ${usd(goal)} goal.`;
+    if (projected > 0)
+      money += ` Another ${usd(projected)} is in the works (not closed yet).`;
+  } else if (projected > 0) {
+    money = ` You haven't closed a deal yet this month, but ${usd(projected)} is in the works — nothing's earned until a deal closes.`;
+  } else {
+    money = ` You're at the start of the month — ${usd(goal)} to go.`;
+  }
 
   // Pick the single most valuable action.
   let doFirst: string | null = null;
