@@ -231,8 +231,12 @@ export async function createBuyer(input: BuyerInsert): Promise<Buyer> {
     mem.buyers.push(row);
     return row;
   }
-  const { data } = await sb.from("buyers").insert(row).select().single();
-  return (data as Buyer) ?? row;
+  // Let Postgres generate the uuid PK (the local newId() is for fixtures only and
+  // is NOT a valid uuid). Surface insert errors instead of silently dropping rows.
+  const { id: _localId, ...insertRow } = row;
+  const { data, error } = await sb.from("buyers").insert(insertRow).select().single();
+  if (error) throw new Error(`createBuyer: ${error.message}`);
+  return data as Buyer;
 }
 
 export async function updateBuyer(

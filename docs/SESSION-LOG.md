@@ -42,6 +42,14 @@ interfaces + provision Supabase.
 - **`/api/underwrite`** route: runs underwriting-only (the 70%/comps math on every un-underwritten
   property), independent of the slow skip-trace in `/api/pull`. Used to top off offer numbers — live
   DB now has **all 1,195 properties underwritten** (5 clear / 1,190 pass; raw absentee data, no comps).
+- **Real buyers from the cadastral** (`/api/buyers/discover` rewritten): sweeps all 6 farm cities for
+  multi-property owners (investors/landlords = cash buyers), groups across cities into one buy-box
+  (areas + price band + mailing), govt/bank/HOA filtered. Live DB now has **328 real investor buyers**.
+  Fixed two bugs found doing this: the route used dead field names (`PropCity` — doesn't exist; situs
+  is `CityStateZip`), and `createBuyer` set a non-uuid `id` (rejected by the uuid PK) **and swallowed
+  the insert error** — now lets Postgres gen the uuid and throws on failure.
+  NOTE: discovered buyers have no email/phone (cadastral has none) — matching connects them to deals,
+  but the dispo email-blast needs emails (skip-trace enrichment is the next step).
 - Earlier in this session the live DB was wiped of demo/test rows (6 deals, 1 contract, 6 matches,
   16 messages, 3 demo buyers) — real property/owner/underwrite leads kept. Desk starts clean.
 - **Money math = EARNED vs IN-THE-WORKS** (fixed a confusing display): "Pace to $10k" used to sum
