@@ -2,6 +2,7 @@ import "server-only";
 import type { DealStage } from "@parcel/types";
 import { getDealViews } from "@/lib/views";
 import { usd } from "@/lib/format";
+import { Term } from "@/components/Term";
 
 const MONTHLY_GOAL = 10_000; // CLAUDE.md: net $10k/month (~one $10k assignment)
 const TARGET_FEE = 10_000; // research-backed planning fee (docs/RESEARCH-wholesaling.md)
@@ -57,7 +58,7 @@ export async function DashboardPanel() {
           sub="broker-line pacing"
         />
         <Metric
-          label="Clear verdicts"
+          label={<Term k="verdict">Clear verdicts</Term>}
           value={String(clearVerdicts)}
           sub="worth working"
         />
@@ -78,7 +79,8 @@ export async function DashboardPanel() {
 
       <div className="mt-5 border-t border-slate-100 pt-3">
         <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">
-          Funnel benchmarks (research) · ≈ {dealsToGoal} more assignment
+          Funnel benchmarks (research) · ≈ {dealsToGoal} more{" "}
+          <Term k="assignment_fee">assignment</Term>
           {dealsToGoal === 1 ? "" : "s"} to goal
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -106,7 +108,7 @@ function Metric({
   value,
   sub,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   sub: string;
 }) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { Scoreboards } from "@/components/Scoreboards";
+import { NextHint } from "@/components/NextHint";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,12 @@ export default function DashboardPage() {
           roughly one deal. This tracks how close you are this month and the
           rough numbers behind it.
         </p>
+        <div className="mt-3">
+          <NextHint>
+            Watch the three scoreboards below — whichever lane is lowest is where
+            to focus. Hover any underlined word for a plain-English explanation.
+          </NextHint>
+        </div>
       </div>
       <DashboardPanel />
       <Scoreboards />

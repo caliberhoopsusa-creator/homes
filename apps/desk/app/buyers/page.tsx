@@ -4,6 +4,7 @@ import { BuyerForm, BuyerRow } from "@/components/BuyerForm";
 import { ImportBuyers } from "@/components/ImportBuyers";
 import { FindBuyersButton } from "@/components/FindBuyersButton";
 import { Term } from "@/components/Term";
+import { NextHint } from "@/components/NextHint";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,13 @@ export default async function BuyersPage() {
           dispatch a deal, it goes to the buyers whose{" "}
           <Term k="buy_box">buy box</Term> fits.
         </p>
+        <div className="mt-3">
+          <NextHint>
+            {buyers.length === 0
+              ? "Click Find from county to build your buyer list from public records — for free."
+              : "Keep adding buyers — a deeper list means deals sell faster when you dispatch."}
+          </NextHint>
+        </div>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">

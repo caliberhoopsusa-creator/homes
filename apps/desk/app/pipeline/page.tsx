@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getDealViews, type DealView } from "@/lib/views";
 import { DealCard } from "@/components/DealCard";
 import { GuideCard } from "@/components/GuideCard";
+import { NextHint } from "@/components/NextHint";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,14 @@ export default async function PipelinePage() {
         <p className="text-sm text-slate-500">
           Every deal, grouped by where it is in the journey. Left to right = lead to payday.
         </p>
+        {views.length > 0 && (
+          <div className="mt-3">
+            <NextHint>
+              Click any card to open the deal — each one tells you its single next
+              move. Work the leftmost columns first.
+            </NextHint>
+          </div>
+        )}
       </div>
 
       {views.length === 0 ? (

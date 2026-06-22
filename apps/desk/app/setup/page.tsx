@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getConnections, type ConnStatus } from "@/lib/connections";
+import { NextHint } from "@/components/NextHint";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ const BADGE_TEXT: Record<ConnStatus, string> = {
 export default function SetupPage() {
   const connections = getConnections();
   const done = connections.filter((c) => c.status === "connected").length;
+  const nextUp = connections.find((c) => c.status !== "connected");
 
   return (
     <div className="space-y-6">
@@ -40,6 +42,13 @@ export default function SetupPage() {
           </code>{" "}
           — no secrets are shown on this page.
         </p>
+        <div className="mt-3">
+          <NextHint>
+            {nextUp
+              ? <>Set up <strong>{nextUp.label}</strong> next — {nextUp.how}</>
+              : "Everything's connected. You're ready to run live."}
+          </NextHint>
+        </div>
       </div>
 
       <div className="space-y-3">

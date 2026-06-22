@@ -11,12 +11,22 @@ import {
   getUnderwrites,
 } from "@/lib/data";
 import { usd } from "@/lib/format";
+import { Term } from "@/components/Term";
+import type { GlossaryKey } from "@/lib/glossary";
 
 // Accent per board so the three parts of the business read as distinct lanes.
 const ACCENT: Record<string, string> = {
   Marketing: "border-t-blue-500",
   Acquisitions: "border-t-amber-500",
   Dispositions: "border-t-green-500",
+};
+
+// Stat labels that carry jargon → the term to explain (keeps the visible text).
+const LABEL_TERM: Record<string, GlossaryKey> = {
+  "Fees earned": "assignment_fee",
+  "Under contract": "under_contract",
+  "Deals assigned": "dispo",
+  "Buyers on list": "buy_box",
 };
 
 export async function Scoreboards() {
@@ -74,7 +84,11 @@ function BoardCard({ board, accent }: { board: Board; accent: string }) {
               {s.money ? usd(s.value) : s.value}
             </dd>
             <dt className="text-[11px] font-medium leading-tight text-slate-600">
-              {s.label}
+              {LABEL_TERM[s.label] ? (
+                <Term k={LABEL_TERM[s.label]!}>{s.label}</Term>
+              ) : (
+                s.label
+              )}
             </dt>
             {s.sub && (
               <div className="text-[11px] leading-tight text-slate-400">

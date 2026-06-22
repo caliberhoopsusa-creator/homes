@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getBuyers, getContracts, getProperties } from "@/lib/data";
 import { ContractRow } from "@/components/ContractRow";
+import { NextHint } from "@/components/NextHint";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,14 @@ export default async function ContractsPage() {
           sent automatically — you review the offer and click{" "}
           <strong className="text-slate-700">Approve &amp; send</strong>.
         </p>
+        {queued.length > 0 && (
+          <div className="mt-3">
+            <NextHint>
+              Review the offer price on the contract below, then click{" "}
+              <strong>Approve &amp; send</strong> — this is how you get paid.
+            </NextHint>
+          </div>
+        )}
       </div>
 
       {queued.length > 0 && (

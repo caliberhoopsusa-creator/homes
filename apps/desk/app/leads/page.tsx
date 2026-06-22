@@ -9,6 +9,7 @@ import {
 import { WorkLeadButton } from "@/components/WorkLeadButton";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
 import { GuideCard } from "@/components/GuideCard";
+import { NextHint } from "@/components/NextHint";
 import { Term } from "@/components/Term";
 import { scoreLead } from "@/lib/scoring";
 import { usd } from "@/lib/format";
@@ -73,6 +74,14 @@ export default async function LeadsPage() {
           <strong className="text-slate-700">Work this lead</strong> to add it to
           your pipeline, then email the owner an offer.
         </p>
+        {leads.length > 0 && (
+          <div className="mt-3">
+            <NextHint>
+              Open the top lead and click{" "}
+              <strong>Work this lead</strong> — it's your most motivated seller.
+            </NextHint>
+          </div>
+        )}
       </div>
 
       {leads.length === 0 ? (
