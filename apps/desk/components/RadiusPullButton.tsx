@@ -12,7 +12,7 @@ const DEFAULT_REQUEST: RadiusPullRequest = radiusPullRequest.parse({
   filters: { minBeds: 2, distress: ["absentee", "tax_delinquent"] },
 });
 
-type State = "idle" | "pulling" | "ok" | "info" | "error";
+type State = "idle" | "pulling" | "ok" | "nonew" | "info" | "error";
 
 interface PullBody {
   ran?: boolean;
@@ -49,12 +49,20 @@ export function RadiusPullButton() {
 
       if (res.ok && body?.ran) {
         const n = body.sourcing?.inserted ?? 0;
-        setState("ok");
-        setNote(
-          n > 0
-            ? `Found ${n} new lead${n === 1 ? "" : "s"}. Open the “Leads” tab to work them.`
-            : "No new leads this time — nothing new in the area.",
-        );
+        if (n > 0) {
+          setState("ok");
+          setNote(
+            `Found ${n} new lead${n === 1 ? "" : "s"}. Open the “Leads” tab to work them.`,
+          );
+        } else {
+          // Not a failure: the free source returns the same records each time and
+          // we de-duplicate, so a repeat pull adds nothing new. You already have
+          // your leads — point the user at them instead of implying a dead end.
+          setState("nonew");
+          setNote(
+            "You're already up to date — no new properties in this area to add. Your leads are waiting in the “Leads” tab. (To find more, widen the area or add another source in Setup.)",
+          );
+        }
       } else if (res.ok) {
         setState("info");
         setNote(
@@ -81,18 +89,22 @@ export function RadiusPullButton() {
       ? "Finding…"
       : state === "ok"
         ? "Leads found ✓"
-        : state === "info"
-          ? "Needs setup"
-          : state === "error"
-            ? "Couldn't find leads"
-            : "Find leads";
+        : state === "nonew"
+          ? "Up to date ✓"
+          : state === "info"
+            ? "Needs setup"
+            : state === "error"
+              ? "Couldn't find leads"
+              : "Find leads";
 
   const noteTone =
     state === "ok"
       ? "border-green-200 bg-green-50 text-green-800"
-      : state === "error"
-        ? "border-red-200 bg-red-50 text-red-800"
-        : "border-slate-200 bg-white text-slate-700";
+      : state === "nonew"
+        ? "border-blue-200 bg-blue-50 text-blue-800"
+        : state === "error"
+          ? "border-red-200 bg-red-50 text-red-800"
+          : "border-slate-200 bg-white text-slate-700";
 
   return (
     <div className="relative">
