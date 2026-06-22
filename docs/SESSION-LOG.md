@@ -25,8 +25,8 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **204 tests pass** (underwriting 40, sourcing 41,
-  skiptrace 12, outreach 43, intake 15, desk 53); the Next.js desk builds. Live DB = `homes`.
+- **8 workspace projects** typecheck clean; **210 tests pass** (underwriting 40, sourcing 41,
+  skiptrace 12, outreach 43, intake 15, desk 59); the Next.js desk builds. Live DB = `homes`.
 - **List-stacking** in `runPull`: the same address from multiple free lists collapses into ONE
   property carrying the union of distress signals (cross-source dedupe by normalized address) —
   no duplicate rows, and the motivation score reflects the full stack.
@@ -36,15 +36,19 @@ interfaces + provision Supabase.
 - **Three scoreboards** (`lib/scoreboards.ts` + dashboard): Marketing / Acquisitions / Dispositions
   activity KPIs (leads, emails, replies → interested, offers, under-contract → buyers, assigned, fees
   earned) — the book's operating-system dashboard, live-refreshing.
-- **Command Center redesign** (`app/page.tsx` + `page.module.css`): the home page is now a dark
-  "cadastral survey terminal" — hairline section-grid, survey-tick corners, amber-money/green-go
-  signals, an animated money dial, and a hot-leads readout. Reuses every real data source + link;
-  orchestrated staggered load with full prefers-reduced-motion fallback.
-- **Site-wide JARVIS HUD theme** (`globals.css` + `layout.tsx` + `Header.tsx`): the whole desk is now
-  a dark holographic command interface. Global type = Chakra Petch (display) + JetBrains Mono. Themed
-  by REMAPPING the light Tailwind palette → HUD tokens in one place (cyan primary, amber money, green
-  go, red danger on a blue-black grid backdrop) + chrome (viewport corner brackets, scanline sweep,
-  glow, cyan focus rings). No per-page rewrite; all 10 routes verified 200 on the dev server.
+- **UI direction: clean & light + "JARVIS as helpful assistant"** (NOT the sci-fi look). The dark
+  Command Center + site-wide HUD theme were BUILT then REVERTED at the operator's request — they
+  wanted maximum readability + assistant-style helpfulness, not neon. (HUD lives in git history at
+  `824a743` if ever wanted.) The desk is back to the bright high-contrast look.
+- **Assistant helpfulness layer** (the real ask):
+  - `lib/brief.ts` (pure, +6 tests) + `components/Brief.tsx` — a plain-English "briefing" banner atop
+    Home: what you've got, % to goal, and the single **Do this first** (money-first: an approvable
+    contract always leads). 
+  - `lib/glossary.ts` + `components/Term.tsx` — accessible inline jargon explainer (`<abbr>` + title +
+    aria-label, keyboard-focusable). Tagged MAO/assignment fee/spread/motivation/distress/buy box
+    across Home, Leads, Buyers.
+  - `components/GuideCard.tsx` — guiding empty states (what to do + why + the action) on Home, Leads,
+    Pipeline.
 - **Autopilot** (`/api/cron`, `vercel.json` daily) runs the funnel hands-off: pull → score →
   skip-trace → underwrite → send the *due* outreach touch per owner (cadence-aware, no re-spam).
   Only human action left = the one-click contract approval. Enable by deploying + setting `CRON_SECRET`.

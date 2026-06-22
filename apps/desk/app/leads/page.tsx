@@ -8,6 +8,8 @@ import {
 } from "@/lib/data";
 import { WorkLeadButton } from "@/components/WorkLeadButton";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
+import { GuideCard } from "@/components/GuideCard";
+import { Term } from "@/components/Term";
 import { scoreLead } from "@/lib/scoring";
 import { usd } from "@/lib/format";
 
@@ -65,21 +67,21 @@ export default async function LeadsPage() {
         </h1>
         <p className="max-w-2xl text-sm text-slate-500">
           Properties you've sourced but haven't started working yet, ranked by{" "}
-          <strong className="text-slate-700">motivation</strong> — leads on more
-          distress lists with a bigger spread rise to the top. Start at the top:{" "}
+          <Term k="motivation_score">motivation</Term> — leads on more{" "}
+          <Term k="distress_signal">distress signals</Term> with a bigger{" "}
+          <Term k="spread">spread</Term> rise to the top. Start at the top:{" "}
           <strong className="text-slate-700">Work this lead</strong> to add it to
           your pipeline, then email the owner an offer.
         </p>
       </div>
 
       {leads.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <p className="text-base text-slate-600">No new leads right now.</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Click <strong>Find leads</strong> in the top bar to pull more
-            properties to work.
-          </p>
-        </div>
+        <GuideCard
+          eyebrow="No leads waiting"
+          title="You're all caught up — time to pull more."
+          body="You've started working every lead you've sourced. Pull a fresh batch of distressed properties and the hottest new ones will appear here, ranked for you."
+          cta={{ note: 'Click “Find leads” in the top bar to pull more.' }}
+        />
       ) : (
         <>
           <p className="text-xs text-slate-400">
@@ -128,11 +130,10 @@ export default async function LeadsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs text-slate-400">Offer up to</div>
-                    <div
-                      className="font-semibold tabular-nums text-green-700"
-                      title="The most you should pay (your MAO from the 70% math)"
-                    >
+                    <div className="text-xs text-slate-400">
+                      Offer up to <Term k="mao">(MAO)</Term>
+                    </div>
+                    <div className="font-semibold tabular-nums text-green-700">
                       {uw?.your_mao != null ? usd(uw.your_mao) : "—"}
                     </div>
                   </div>

@@ -3,6 +3,7 @@ import { getBuyers } from "@/lib/data";
 import { BuyerForm, BuyerRow } from "@/components/BuyerForm";
 import { ImportBuyers } from "@/components/ImportBuyers";
 import { FindBuyersButton } from "@/components/FindBuyersButton";
+import { Term } from "@/components/Term";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,8 @@ export default async function BuyersPage() {
         </h1>
         <p className="max-w-2xl text-sm text-slate-500">
           Your cash buyers. The more you have, the faster deals sell — when you
-          dispatch a deal, it goes to the buyers whose “buy box” fits.
+          dispatch a deal, it goes to the buyers whose{" "}
+          <Term k="buy_box">buy box</Term> fits.
         </p>
       </div>
 

@@ -2,6 +2,7 @@ import type { DealStage } from "@parcel/types";
 import Link from "next/link";
 import { getDealViews, type DealView } from "@/lib/views";
 import { DealCard } from "@/components/DealCard";
+import { GuideCard } from "@/components/GuideCard";
 import { RealtimeBoundary } from "@/components/RealtimeBoundary";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,14 @@ export default async function PipelinePage() {
         </p>
       </div>
 
+      {views.length === 0 ? (
+        <GuideCard
+          eyebrow="Pipeline is empty"
+          title="No deals are moving yet."
+          body="Deals land here once you start working a lead. Find some properties, email the owners, and the first replies become deals you can track across these columns."
+          cta={{ label: "Browse leads to work", href: "/leads" }}
+        />
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {STAGES.map(({ stage, blurb }) => {
           const cards = byStage.get(stage) ?? [];
@@ -69,6 +78,7 @@ export default async function PipelinePage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
