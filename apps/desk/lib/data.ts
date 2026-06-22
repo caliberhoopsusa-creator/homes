@@ -23,6 +23,7 @@ import type {
 import { closingSeedRows } from "./closing";
 import { consentFromRows, normalizePhone } from "./sms-consent";
 import { underwrite } from "@parcel/underwriting";
+import { fetchAll } from "@parcel/db";
 import { makeProvider, configFromEnv } from "@parcel/outreach";
 import { getSupabase, isLive } from "./supabase";
 import { computeMatchRows } from "./match";
@@ -53,8 +54,8 @@ const newId = (prefix: string) =>
 export async function getProperties(): Promise<Property[]> {
   const sb = getSupabase();
   if (!sb) return mem.properties;
-  const { data } = await sb.from("properties").select("*");
-  return (data as Property[]) ?? [];
+  // Page past PostgREST's 1000-row cap so all leads show (not just the first 1000).
+  return fetchAll<Property>(() => sb.from("properties").select("*"));
 }
 
 export async function getProperty(id: string): Promise<Property | null> {
@@ -137,15 +138,13 @@ export async function getContract(id: string): Promise<Contract | null> {
 export async function getOwners(): Promise<Owner[]> {
   const sb = getSupabase();
   if (!sb) return mem.owners;
-  const { data } = await sb.from("owners").select("*");
-  return (data as Owner[]) ?? [];
+  return fetchAll<Owner>(() => sb.from("owners").select("*"));
 }
 
 export async function getUnderwrites(): Promise<Underwrite[]> {
   const sb = getSupabase();
   if (!sb) return mem.underwrites;
-  const { data } = await sb.from("underwrites").select("*");
-  return (data as Underwrite[]) ?? [];
+  return fetchAll<Underwrite>(() => sb.from("underwrites").select("*"));
 }
 
 export async function getMessages(): Promise<Message[]> {

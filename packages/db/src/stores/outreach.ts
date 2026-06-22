@@ -5,16 +5,16 @@ import type {
   OwnerTouchState,
 } from "@parcel/outreach";
 import type { Db } from "../client.js";
-import { unwrap, startOfUtcDay } from "../util.js";
+import { unwrap, fetchAll, startOfUtcDay } from "../util.js";
 
 /** Postgres-backed OutreachStore (PRD §6.4). */
 export class OutreachDbStore implements OutreachStore {
   constructor(private readonly db: Db) {}
 
   async clearingOwners(): Promise<ClearingOwner[]> {
-    const clears = unwrap(
-      await this.db.from("underwrites").select("property_id").eq("verdict", "clear"),
-    ) as Array<{ property_id: string | null }>;
+    const clears = await fetchAll<{ property_id: string | null }>(() =>
+      this.db.from("underwrites").select("property_id").eq("verdict", "clear"),
+    );
     const ids = [
       ...new Set(clears.map((c) => c.property_id).filter((id): id is string => !!id)),
     ];
@@ -75,14 +75,18 @@ export class OutreachDbStore implements OutreachStore {
 
   async outreachHistory(): Promise<Map<string, OwnerTouchState>> {
     // Sent seller-outreach touches; reduce to max step + latest send per owner.
-    const rows = unwrap(
-      await this.db
+    const rows = await fetchAll<{
+      owner_id: string | null;
+      step: number | null;
+      sent_at: string | null;
+    }>(() =>
+      this.db
         .from("messages")
         .select("owner_id, step, sent_at")
         .eq("kind", "seller_outreach")
         .eq("direction", "outbound")
         .eq("status", "sent"),
-    ) as Array<{ owner_id: string | null; step: number | null; sent_at: string | null }>;
+    );
 
     const history = new Map<string, OwnerTouchState>();
     for (const r of rows) {

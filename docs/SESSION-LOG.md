@@ -34,6 +34,11 @@ interfaces + provision Supabase.
 - **Filter fix:** `runPull` no longer drops a candidate for a *missing* bed count — `minBeds` only
   applies when beds is known (cadastral leads have no beds; the old `(beds ?? 0) < minBeds` nuked all
   1,200). Same principle as the null-coords radius case. +1 test.
+- **Pagination fix (1000-row cap):** PostgREST caps every `select` at 1000 rows. Stores did unbounded
+  `select("*")`, so with 1,195 properties the newest ~195 were invisible to underwriting/skip-trace
+  and the desk Leads list — underwriting plateaued at exactly 1000. Added `fetchAll()` (pages via
+  `.range`) in `packages/db/util` and applied it across the sourcing/skiptrace/underwrite/outreach
+  stores + the desk's `getProperties/getOwners/getUnderwrites`. Now all rows are seen.
 - Earlier in this session the live DB was wiped of demo/test rows (6 deals, 1 contract, 6 matches,
   16 messages, 3 demo buyers) — real property/owner/underwrite leads kept. Desk starts clean.
 - **Money math = EARNED vs IN-THE-WORKS** (fixed a confusing display): "Pace to $10k" used to sum

@@ -1,16 +1,16 @@
 import type { DistressSignal, PropertyInsert, PropertySource } from "@parcel/types";
 import type { AddressIndexRow, SourcingStore } from "@parcel/sourcing";
 import type { Db } from "../client.js";
-import { unwrap } from "../util.js";
+import { unwrap, fetchAll } from "../util.js";
 
 /** Postgres-backed SourcingStore (PRD §6.1). */
 export class SourcingDbStore implements SourcingStore {
   constructor(private readonly db: Db) {}
 
   async existingSourceIds(source: PropertySource): Promise<Set<string>> {
-    const data = unwrap(
-      await this.db.from("properties").select("source_id").eq("source", source),
-    ) as Array<{ source_id: string | null }>;
+    const data = await fetchAll<{ source_id: string | null }>(() =>
+      this.db.from("properties").select("source_id").eq("source", source),
+    );
     const set = new Set<string>();
     for (const r of data) if (r.source_id) set.add(r.source_id);
     return set;
@@ -25,9 +25,9 @@ export class SourcingDbStore implements SourcingStore {
   }
 
   async existingAddressIndex(): Promise<AddressIndexRow[]> {
-    return unwrap(
-      await this.db.from("properties").select("id, address, distress_signals"),
-    ) as AddressIndexRow[];
+    return fetchAll<AddressIndexRow>(() =>
+      this.db.from("properties").select("id, address, distress_signals"),
+    );
   }
 
   async mergeDistress(id: string, signals: DistressSignal[]): Promise<void> {

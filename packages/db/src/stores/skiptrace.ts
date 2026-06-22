@@ -1,20 +1,22 @@
 import type { OwnerHit, Property } from "@parcel/types";
 import type { SkiptraceStore } from "@parcel/skiptrace";
 import type { Db } from "../client.js";
-import { unwrap } from "../util.js";
+import { unwrap, fetchAll } from "../util.js";
 
 /** Postgres-backed SkiptraceStore (PRD §6.2) — enforces the no-downgrade rule. */
 export class SkiptraceDbStore implements SkiptraceStore {
   constructor(private readonly db: Db) {}
 
   async propertiesWithoutMatchedOwner(): Promise<Property[]> {
-    const matched = unwrap(
-      await this.db.from("owners").select("property_id").eq("skiptrace_status", "matched"),
-    ) as Array<{ property_id: string | null }>;
+    const matched = await fetchAll<{ property_id: string | null }>(() =>
+      this.db.from("owners").select("property_id").eq("skiptrace_status", "matched"),
+    );
     const matchedIds = new Set(
       matched.map((m) => m.property_id).filter((id): id is string => !!id),
     );
-    const props = unwrap(await this.db.from("properties").select("*")) as Property[];
+    const props = await fetchAll<Property>(() =>
+      this.db.from("properties").select("*"),
+    );
     return props.filter((p) => !matchedIds.has(p.id));
   }
 
