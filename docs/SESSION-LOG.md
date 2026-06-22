@@ -25,8 +25,17 @@ A pnpm/TypeScript monorepo implementing the Parcel wholesale-acquisition funnel.
 (all providers default to mocks). Going live = drop real keys behind the existing
 interfaces + provision Supabase.
 
-- **8 workspace projects** typecheck clean; **212 tests pass** (underwriting 40, sourcing 41,
+- **8 workspace projects** typecheck clean; **213 tests pass** (underwriting 40, sourcing 42,
   skiptrace 12, outreach 43, intake 15, desk 61); the Next.js desk builds. Live DB = `homes`.
+- **6 free Montana lead sources** (was 1): `mtAbsentee(city)` helper in the county ETL route adds
+  Billings/Missoula/Bozeman/Great Falls/Kalispell/Helena off the same proven cadastral endpoint;
+  `COUNTY_RECORDS_SOURCES` (live `.env.local`) lists all six. Live DB now ~1,195 properties / 703
+  traced owners across 6 cities (was 234).
+- **Filter fix:** `runPull` no longer drops a candidate for a *missing* bed count — `minBeds` only
+  applies when beds is known (cadastral leads have no beds; the old `(beds ?? 0) < minBeds` nuked all
+  1,200). Same principle as the null-coords radius case. +1 test.
+- Earlier in this session the live DB was wiped of demo/test rows (6 deals, 1 contract, 6 matches,
+  16 messages, 3 demo buyers) — real property/owner/underwrite leads kept. Desk starts clean.
 - **Money math = EARNED vs IN-THE-WORKS** (fixed a confusing display): "Pace to $10k" used to sum
   *projected* fees of Under-contract/Assigned deals → showed e.g. $14k with nothing closed. Now the
   goal counts **only closed deals** (money earned); in-progress projected fees show as a separate,

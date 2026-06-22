@@ -47,6 +47,27 @@ type Feed =
       splitCityStateZip?: boolean;
     };
 
+// Montana statewide cadastral (MSDI), filtered to ABSENTEE owners (owner mailing
+// state != MT) in one city. Same proven endpoint + verified field names as the
+// original Billings feed — so adding a city is one line, and each city yields a
+// fresh batch of leads. cityUpper must match how the city appears in the
+// CityStateZip field, e.g. "GREAT FALLS".
+const mtAbsentee = (cityUpper: string): Feed => ({
+  kind: "arcgis",
+  layerUrl:
+    "https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer/0",
+  where: `OwnerState <> 'MT' AND CityStateZip LIKE '%${cityUpper}%'`,
+  outFields: "PARCELID,AddressLine1,CityStateZip,OwnerState,TotalValue",
+  resultRecordCount: 200,
+  splitCityStateZip: true,
+  map: {
+    record_id: "PARCELID",
+    address: "AddressLine1",
+    city: "CityStateZip", // combined; split into city/state/zip below
+    est_value: "TotalValue",
+  },
+});
+
 const FEEDS: Record<string, Feed> = {
   // Offline sample (no egress) — demonstrates the format + the full loop.
   "yellowstone-tax-delinquent": {
@@ -66,25 +87,15 @@ TD-1002,118 Wyoming Ave,Billings,MT,59101,2,164500
 TD-1003,3410 Granger Ave,Billings,MT,59102,4,312000`,
   },
 
-  // REAL source: Montana Cadastral statewide parcels (MSDI). Filters to ABSENTEE
-  // owners (owner mailing state != MT) in Billings — a top distress signal.
-  // Field names verified live (2026-06): situs is AddressLine1 + a combined
-  // CityStateZip; owner mailing fields are OwnerCity/OwnerState/OwnerZipCode.
-  "mt-absentee-billings": {
-    kind: "arcgis",
-    layerUrl:
-      "https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer/0",
-    where: "OwnerState <> 'MT' AND CityStateZip LIKE '%BILLINGS%'",
-    outFields: "PARCELID,AddressLine1,CityStateZip,OwnerState,TotalValue",
-    resultRecordCount: 200,
-    splitCityStateZip: true,
-    map: {
-      record_id: "PARCELID",
-      address: "AddressLine1",
-      city: "CityStateZip", // combined; split into city/state/zip below
-      est_value: "TotalValue",
-    },
-  },
+  // REAL source: Montana Cadastral statewide parcels (MSDI), absentee owners per
+  // city. Field names verified live (2026-06). Add a city = add a line below +
+  // a matching entry in COUNTY_RECORDS_SOURCES.
+  "mt-absentee-billings": mtAbsentee("BILLINGS"),
+  "mt-absentee-missoula": mtAbsentee("MISSOULA"),
+  "mt-absentee-bozeman": mtAbsentee("BOZEMAN"),
+  "mt-absentee-greatfalls": mtAbsentee("GREAT FALLS"),
+  "mt-absentee-kalispell": mtAbsentee("KALISPELL"),
+  "mt-absentee-helena": mtAbsentee("HELENA"),
 
   // EXAMPLE Socrata (SODA) code-violation feed. Thousands of cities publish these
   // on data.<city>.gov — a high-signal FREE distress list. This points at a real,

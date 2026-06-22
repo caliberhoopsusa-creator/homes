@@ -193,6 +193,21 @@ describe("runPull() list-stacking (cross-source dedupe by address)", () => {
     expect(res.inserted).toBe(0);
     expect(res.stacked).toBe(0);
   });
+
+  it("keeps a candidate with unknown beds even under a minBeds filter", async () => {
+    // Cadastral/public-record leads often have no bed count — a missing field
+    // must not silently drop a real lead.
+    const store = new FakeStore();
+    const res = await runPull(
+      stub([
+        cand({ source: "county", source_id: "c-1", address: "9 Absentee Way", distress_signals: ["absentee"], beds: null }),
+      ]),
+      store,
+      { ...REQ, filters: { minBeds: 3, distress: ["absentee"] } },
+    );
+    expect(res.inserted).toBe(1);
+    expect(store.rows[0]!.beds).toBeNull();
+  });
 });
 
 describe("CachingProvider", () => {

@@ -156,7 +156,10 @@ function passesFilters(c: PropertyCandidate, req: RadiusPullRequest): boolean {
   }
 
   const { minBeds, distress } = req.filters;
-  if (minBeds !== undefined && (c.beds ?? 0) < minBeds) return false;
+  // Only enforce minBeds when bed count is KNOWN. Public-record sources (county
+  // cadastral) often omit beds — don't silently drop a real lead for a missing
+  // field (same principle as the null-coords radius case above).
+  if (minBeds !== undefined && c.beds !== null && c.beds < minBeds) return false;
   if (distress?.length) {
     const have = new Set(c.distress_signals);
     if (!distress.some((d) => have.has(d))) return false;
